@@ -145,3 +145,108 @@ let y = block:
       value: (block
         body: (statement_list
           (integer_literal))))))
+
+=============
+If statements
+=============
+
+if true:
+  echo foo
+
+if false:
+  echo bar
+
+if x:
+  if y:
+    "string"
+  elif z:
+    10u32
+
+  something bar
+else:
+  10
+
+let x = if true:
+  10
+elif something:
+  "string"
+else:
+  100
+
+block:
+  var x = if true:
+            10
+          else:
+            1f
+
+if true: expr1
+else: expr2
+
+---
+
+(source_file
+  (if
+    condition: (boolean_literal)
+    consequence: (statement_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (identifier)))))
+  (if
+    condition: (boolean_literal)
+    consequence: (statement_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (identifier)))))
+  (if
+    condition: (identifier)
+    consequence: (statement_list
+      (if
+        condition: (identifier)
+        consequence: (statement_list
+          (string_literal))
+        alternative: (elif_clause
+          condition: (identifier)
+          consequence: (statement_list
+            (integer_literal))))
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (identifier))))
+    alternative: (else_clause
+      body: (statement_list
+        (integer_literal))))
+  (let_section
+    (variable_declaration
+      name: (identifier)
+      value: (if
+        condition: (boolean_literal)
+        consequence: (statement_list
+          (integer_literal))
+        alternative: (elif_clause
+          condition: (identifier)
+          consequence: (statement_list
+            (string_literal)))
+        alternative: (else_clause
+          body: (statement_list
+            (integer_literal))))))
+  (block
+    body: (statement_list
+      (var_section
+        (variable_declaration
+          name: (identifier)
+          value: (if
+            condition: (boolean_literal)
+            consequence: (statement_list
+              (integer_literal))
+            alternative: (else_clause
+              body: (statement_list
+                (float_literal))))))))
+  (if
+    condition: (boolean_literal)
+    consequence: (statement_list
+      (identifier))
+    alternative: (else_clause
+      body: (statement_list
+        (identifier)))))

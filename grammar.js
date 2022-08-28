@@ -51,6 +51,11 @@ module.exports = grammar({
 
   extras: $ => [' ', $._spaces_before_comment, $.comment],
 
+  conflicts: $ => [
+    [$._if_alternatives],
+    [$.if]
+  ],
+
   rules: {
     source_file: $ => seq(
       $._indent_start,
@@ -185,7 +190,8 @@ module.exports = grammar({
       $.identifier,
       $._literal,
       $.call,
-      $.block
+      $.block,
+      $.if
     ),
 
     call: $ => seq(
@@ -211,6 +217,41 @@ module.exports = grammar({
     block: $ => seq(
       styleInsensitive('block'),
       optional(field('name', $.identifier)),
+      ':',
+      field('body', $.statement_list)
+    ),
+
+    if: $ => seq(
+      styleInsensitive('if'),
+      field('condition', $._expression),
+      ':',
+      field('consequence', $.statement_list),
+      optional($._if_alternatives)
+    ),
+
+    _if_alternatives: $ => choice(
+      repeat1($._if_alternative_clause),
+      repeat1(seq($._indent_eq, $._if_alternative_clause)),
+      seq(
+        $._indent,
+        repeatSep1(seq($._indent_eq), $._if_alternative_clause),
+        $._dedent
+      )
+    ),
+
+    _if_alternative_clause: $ => field(
+      'alternative', choice($.elif_clause, $.else_clause)
+    ),
+
+    elif_clause: $ => seq(
+      styleInsensitive('elif'),
+      field('condition', $._expression),
+      ':',
+      field('consequence', $.statement_list)
+    ),
+
+    else_clause: $ => seq(
+      styleInsensitive('else'),
       ':',
       field('body', $.statement_list)
     ),
