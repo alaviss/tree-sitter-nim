@@ -58,8 +58,21 @@ module.exports = grammar({
       MaybeNewline
     ),
 
+    statement_list: $ => prec.right(choice(
+      repeatSep1(';', $._statement_simple),
+      seq(
+        $._indent,
+        repeatSep1(choice($._indent_eq, ';'), $._statement),
+        $._dedent
+      )
+    )),
+
     _statement: $ => choice(
       $._declaration,
+      $._statement_simple
+    ),
+
+    _statement_simple: $ => choice(
       $._expression
     ),
 
@@ -171,7 +184,8 @@ module.exports = grammar({
     _expression: $ => choice(
       $.identifier,
       $._literal,
-      $.call
+      $.call,
+      $.block
     ),
 
     call: $ => seq(
@@ -192,6 +206,13 @@ module.exports = grammar({
 
     _command_argument_list: $ => prec.left(
       repeatSepInd1($, ',', $._expression)
+    ),
+
+    block: $ => seq(
+      styleInsensitive('block'),
+      optional(field('name', $.identifier)),
+      ':',
+      field('body', $.statement_list)
     ),
 
     _literal: $ => choice(
