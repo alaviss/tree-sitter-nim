@@ -53,7 +53,8 @@ module.exports = grammar({
 
   conflicts: $ => [
     [$._if_alternatives],
-    [$.if]
+    [$.if],
+    [$.when]
   ],
 
   rules: {
@@ -191,7 +192,8 @@ module.exports = grammar({
       $._literal,
       $.call,
       $.block,
-      $.if
+      $.if,
+      $.when
     ),
 
     call: $ => seq(
@@ -223,6 +225,14 @@ module.exports = grammar({
 
     if: $ => seq(
       styleInsensitive('if'),
+      field('condition', $._expression),
+      ':',
+      field('consequence', $.statement_list),
+      optional($._if_alternatives)
+    ),
+
+    when: $ => seq(
+      styleInsensitive('when'),
       field('condition', $._expression),
       ':',
       field('consequence', $.statement_list),

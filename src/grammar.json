@@ -934,6 +934,10 @@
         {
           "type": "SYMBOL",
           "name": "if"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "when"
         }
       ]
     },
@@ -1123,6 +1127,47 @@
         {
           "type": "PATTERN",
           "value": "i_?[fF]"
+        },
+        {
+          "type": "FIELD",
+          "name": "condition",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expression"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "FIELD",
+          "name": "consequence",
+          "content": {
+            "type": "SYMBOL",
+            "name": "statement_list"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_if_alternatives"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "when": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "PATTERN",
+          "value": "w_?[hH]_?[eE]_?[nN]"
         },
         {
           "type": "FIELD",
@@ -2285,6 +2330,9 @@
     ],
     [
       "if"
+    ],
+    [
+      "when"
     ]
   ],
   "precedences": [],

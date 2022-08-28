@@ -42,6 +42,10 @@
         {
           "type": "tuple",
           "named": true
+        },
+        {
+          "type": "when",
+          "named": true
         }
       ]
     }
@@ -192,6 +196,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "when",
+            "named": true
           }
         ]
       },
@@ -318,6 +326,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "when",
+            "named": true
           }
         ]
       }
@@ -408,6 +420,10 @@
           },
           {
             "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "when",
             "named": true
           }
         ]
@@ -544,6 +560,10 @@
         {
           "type": "var_section",
           "named": true
+        },
+        {
+          "type": "when",
+          "named": true
         }
       ]
     }
@@ -607,6 +627,10 @@
         {
           "type": "var_section",
           "named": true
+        },
+        {
+          "type": "when",
+          "named": true
         }
       ]
     }
@@ -668,6 +692,10 @@
         },
         {
           "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "when",
           "named": true
         }
       ]
@@ -869,6 +897,10 @@
           {
             "type": "tuple",
             "named": true
+          },
+          {
+            "type": "when",
+            "named": true
           }
         ]
       }
@@ -886,6 +918,82 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "when",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "elif_clause",
+            "named": true
+          },
+          {
+            "type": "else_clause",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block",
+            "named": true
+          },
+          {
+            "type": "boolean_literal",
+            "named": true
+          },
+          {
+            "type": "call",
+            "named": true
+          },
+          {
+            "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if",
+            "named": true
+          },
+          {
+            "type": "integer_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "when",
+            "named": true
+          }
+        ]
+      },
+      "consequence": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
