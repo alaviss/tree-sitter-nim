@@ -20,6 +20,10 @@
           "named": true
         },
         {
+          "type": "case",
+          "named": true
+        },
+        {
           "type": "float_literal",
           "named": true
         },
@@ -108,6 +112,80 @@
     }
   },
   {
+    "type": "case",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block",
+            "named": true
+          },
+          {
+            "type": "boolean_literal",
+            "named": true
+          },
+          {
+            "type": "call",
+            "named": true
+          },
+          {
+            "type": "case",
+            "named": true
+          },
+          {
+            "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if",
+            "named": true
+          },
+          {
+            "type": "integer_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "when",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "elif_clause",
+          "named": true
+        },
+        {
+          "type": "else_clause",
+          "named": true
+        },
+        {
+          "type": "of_branch",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "const_section",
     "named": true,
     "fields": {},
@@ -171,6 +249,10 @@
           },
           {
             "type": "call",
+            "named": true
+          },
+          {
+            "type": "case",
             "named": true
           },
           {
@@ -304,6 +386,10 @@
             "named": true
           },
           {
+            "type": "case",
+            "named": true
+          },
+          {
             "type": "float_literal",
             "named": true
           },
@@ -399,6 +485,10 @@
             "named": true
           },
           {
+            "type": "case",
+            "named": true
+          },
+          {
             "type": "float_literal",
             "named": true
           },
@@ -471,6 +561,72 @@
     }
   },
   {
+    "type": "of_branch",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "block",
+            "named": true
+          },
+          {
+            "type": "boolean_literal",
+            "named": true
+          },
+          {
+            "type": "call",
+            "named": true
+          },
+          {
+            "type": "case",
+            "named": true
+          },
+          {
+            "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if",
+            "named": true
+          },
+          {
+            "type": "integer_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "when",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "ref_type",
     "named": true,
     "fields": {},
@@ -519,6 +675,10 @@
         },
         {
           "type": "call",
+          "named": true
+        },
+        {
+          "type": "case",
           "named": true
         },
         {
@@ -586,6 +746,10 @@
         },
         {
           "type": "call",
+          "named": true
+        },
+        {
+          "type": "case",
           "named": true
         },
         {
@@ -668,6 +832,10 @@
         },
         {
           "type": "call",
+          "named": true
+        },
+        {
+          "type": "case",
           "named": true
         },
         {
@@ -875,6 +1043,10 @@
             "named": true
           },
           {
+            "type": "case",
+            "named": true
+          },
+          {
             "type": "float_literal",
             "named": true
           },
@@ -952,6 +1124,10 @@
           },
           {
             "type": "call",
+            "named": true
+          },
+          {
+            "type": "case",
             "named": true
           },
           {

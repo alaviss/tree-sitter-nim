@@ -54,7 +54,8 @@ module.exports = grammar({
   conflicts: $ => [
     [$._if_alternatives],
     [$.if],
-    [$.when]
+    [$.when],
+    [$.case],
   ],
 
   rules: {
@@ -193,7 +194,8 @@ module.exports = grammar({
       $.call,
       $.block,
       $.if,
-      $.when
+      $.when,
+      $.case
     ),
 
     call: $ => seq(
@@ -241,16 +243,25 @@ module.exports = grammar({
 
     _if_alternatives: $ => choice(
       repeat1($._if_alternative_clause),
-      repeat1(seq($._indent_eq, $._if_alternative_clause)),
-      seq(
-        $._indent,
-        repeatSep1(seq($._indent_eq), $._if_alternative_clause),
-        $._dedent
-      )
+      repeatIndentGE1($, $._if_alternative_clause)
     ),
 
     _if_alternative_clause: $ => field(
       'alternative', choice($.elif_clause, $.else_clause)
+    ),
+
+    case: $ => seq(
+      styleInsensitive('case'),
+      field('value', $._expression),
+      optional(':'),
+      repeatIndentGE1($, choice($.of_branch, $.elif_clause, $.else_clause))
+    ),
+
+    of_branch: $ => seq(
+      styleInsensitive('of'),
+      repeatSepNL1(',', field('value', $._expression)),
+      ':',
+      field('body', $.statement_list)
     ),
 
     elif_clause: $ => seq(
@@ -392,4 +403,15 @@ function repeatSepInd1($, sep, rule) {
 
 function optionalUnderscore(rule) {
   return seq(rule, repeat(seq(optional('_'), rule)));
+}
+
+function repeatIndentGE1($, rule) {
+  return choice(
+    repeat1(seq($._indent_eq, rule)),
+    seq(
+      $._indent,
+      repeatSep1($._indent_eq, rule),
+      $._dedent
+    )
+  )
 }
