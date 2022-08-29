@@ -327,6 +327,10 @@
         {
           "type": "SYMBOL",
           "name": "export_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "import_from_statement"
         }
       ]
     },
@@ -552,6 +556,100 @@
                     {
                       "type": "SYMBOL",
                       "name": "_expression"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "import_from_statement": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "PATTERN",
+            "value": "f_?[rR]_?[oO]_?[mM]"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_indent_ge"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          },
+          {
+            "type": "FIELD",
+            "name": "module",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_expression"
+            }
+          },
+          {
+            "type": "PATTERN",
+            "value": "i_?[mM]_?[pP]_?[oO]_?[rR]_?[tT]"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_indent_ge"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "symbol",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_expression"
+                }
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": ","
+                        },
+                        {
+                          "type": "REPEAT",
+                          "content": {
+                            "type": "PATTERN",
+                            "value": "[\\n\\r]+"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "FIELD",
+                      "name": "symbol",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_expression"
+                      }
                     }
                   ]
                 }

@@ -109,7 +109,8 @@ module.exports = grammar({
     _statement_simple: $ => choice(
       $._expression,
       $.import_statement,
-      $.export_statement
+      $.export_statement,
+      $.import_from_statement
     ),
 
     import_statement: $ => prec.left(seq(
@@ -130,6 +131,15 @@ module.exports = grammar({
       styleInsensitive('except'),
       optional($._indent_ge),
       repeatSepNL1(',', $._expression)
+    )),
+
+    import_from_statement: $ => prec.left(seq(
+      styleInsensitive('from'),
+      optional($._indent_ge),
+      field('module', $._expression),
+      styleInsensitive('import'),
+      optional($._indent_ge),
+      repeatSepNL1(',', field('symbol', $._expression))
     )),
 
     _declaration: $ => choice(

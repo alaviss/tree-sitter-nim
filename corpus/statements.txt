@@ -112,3 +112,22 @@ export foo, bar except bar
     symbol: (identifier)
     (export_exception
       (identifier))))
+
+======================
+Import from statements
+======================
+
+from system import seq, echo
+
+from X import Y
+
+---
+
+(source_file
+  (import_from_statement
+    module: (identifier)
+    symbol: (identifier)
+    symbol: (identifier))
+  (import_from_statement
+    module: (identifier)
+    symbol: (identifier)))
