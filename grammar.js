@@ -77,7 +77,25 @@ module.exports = grammar({
 
     _statement: $ => choice(
       $._declaration,
-      $._statement_simple
+      $._statement_simple,
+      $.for
+    ),
+
+    for: $ => seq(
+      styleInsensitive('for'),
+      field('left', alias($._pattern_list, $.pattern_list)),
+      styleInsensitive('in'),
+      field('right', $._expression),
+      ':',
+      field('body', $.statement_list)
+    ),
+
+    _pattern_list: $ => prec.right(repeatSep1(
+      ',', choice($.identifier, $.tuple_pattern)
+    )),
+
+    tuple_pattern: $ => seq(
+      '(', repeatSep1(',', $._pattern_list), ')'
     ),
 
     _statement_simple: $ => choice(

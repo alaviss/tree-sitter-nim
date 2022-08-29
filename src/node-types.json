@@ -553,6 +553,86 @@
     }
   },
   {
+    "type": "for",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      },
+      "left": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "pattern_list",
+            "named": true
+          }
+        ]
+      },
+      "right": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block",
+            "named": true
+          },
+          {
+            "type": "boolean_literal",
+            "named": true
+          },
+          {
+            "type": "call",
+            "named": true
+          },
+          {
+            "type": "case",
+            "named": true
+          },
+          {
+            "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "if",
+            "named": true
+          },
+          {
+            "type": "integer_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "try",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "when",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "if",
     "named": true,
     "fields": {
@@ -737,6 +817,25 @@
     }
   },
   {
+    "type": "pattern_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "tuple_pattern",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "ref_type",
     "named": true,
     "fields": {},
@@ -797,6 +896,10 @@
         },
         {
           "type": "float_literal",
+          "named": true
+        },
+        {
+          "type": "for",
           "named": true
         },
         {
@@ -872,6 +975,10 @@
         },
         {
           "type": "float_literal",
+          "named": true
+        },
+        {
+          "type": "for",
           "named": true
         },
         {
@@ -1046,6 +1153,25 @@
         },
         {
           "type": "tuple_deconstruct_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "tuple_pattern",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "tuple_pattern",
           "named": true
         }
       ]
