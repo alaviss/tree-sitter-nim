@@ -456,3 +456,90 @@ of false: 2
       value: (boolean_literal)
       body: (statement_list
         (integer_literal)))))
+
+==============
+Try statements
+==============
+
+try:
+  echo "x"
+  echo "y"
+except A:
+  echo b
+
+try:
+  echo "x"
+  echo "y"
+except A:
+  echo b
+except B, C:
+  echo c
+finally:
+  echo d
+
+try: echo x
+except: echo y
+
+---
+
+(source_file
+  (try
+    body: (statement_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (string_literal)))
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (string_literal))))
+    (except_branch
+      exception: (identifier)
+      body: (statement_list
+        (call
+          function: (identifier)
+          arguments: (argument_list
+            (identifier))))))
+  (try
+    body: (statement_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (string_literal)))
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (string_literal))))
+    (except_branch
+      exception: (identifier)
+      body: (statement_list
+        (call
+          function: (identifier)
+          arguments: (argument_list
+            (identifier)))))
+    (except_branch
+      exception: (identifier)
+      exception: (identifier)
+      body: (statement_list
+        (call
+          function: (identifier)
+          arguments: (argument_list
+            (identifier)))))
+    (finally_branch
+      body: (statement_list
+        (call
+          function: (identifier)
+          arguments: (argument_list
+            (identifier))))))
+  (try
+    body: (statement_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (identifier))))
+    (except_branch
+      body: (statement_list
+        (call
+          function: (identifier)
+          arguments: (argument_list
+            (identifier)))))))

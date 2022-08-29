@@ -56,6 +56,7 @@ module.exports = grammar({
     [$.if],
     [$.when],
     [$.case],
+    [$.try],
   ],
 
   rules: {
@@ -195,7 +196,8 @@ module.exports = grammar({
       $.block,
       $.if,
       $.when,
-      $.case
+      $.case,
+      $.try
     ),
 
     call: $ => seq(
@@ -273,6 +275,27 @@ module.exports = grammar({
 
     else_clause: $ => seq(
       styleInsensitive('else'),
+      ':',
+      field('body', $.statement_list)
+    ),
+
+    try: $ => seq(
+      styleInsensitive('try'),
+      ':',
+      field('body', $.statement_list),
+      repeat(seq($._indent_eq, $.except_branch)),
+      optional(seq($._indent_eq, $.finally_branch))
+    ),
+
+    except_branch: $ => seq(
+      styleInsensitive('except'),
+      optional(repeatSepNL1(',', field('exception', $._expression))),
+      ':',
+      field('body', $.statement_list),
+    ),
+
+    finally_branch: $ => seq(
+      styleInsensitive('finally'),
       ':',
       field('body', $.statement_list)
     ),
