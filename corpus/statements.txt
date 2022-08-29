@@ -51,3 +51,22 @@ for (x, y), w, z in whatever:
         right: (identifier)
         body: (statement_list
           (integer_literal))))))
+
+================
+While statements
+================
+
+while true:
+  while false:
+    nothing
+
+---
+
+(source_file
+  (while
+    condition: (boolean_literal)
+    body: (statement_list
+      (while
+        condition: (boolean_literal)
+        body: (statement_list
+          (identifier))))))

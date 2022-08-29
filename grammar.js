@@ -78,7 +78,8 @@ module.exports = grammar({
     _statement: $ => choice(
       $._declaration,
       $._statement_simple,
-      $.for
+      $.for,
+      $.while
     ),
 
     for: $ => seq(
@@ -96,6 +97,13 @@ module.exports = grammar({
 
     tuple_pattern: $ => seq(
       '(', repeatSep1(',', $._pattern_list), ')'
+    ),
+
+    while: $ => seq(
+      styleInsensitive('while'),
+      field('condition', $._expression),
+      ':',
+      field('body', $.statement_list)
     ),
 
     _statement_simple: $ => choice(
