@@ -92,3 +92,23 @@ import Y, Z,
     module: (identifier)
     (import_exception
       (identifier))))
+
+=================
+Export statements
+=================
+
+export X, Y
+
+export foo, bar except bar
+
+---
+
+(source_file
+  (export_statement
+    symbol: (identifier)
+    symbol: (identifier))
+  (export_statement
+    symbol: (identifier)
+    symbol: (identifier)
+    (export_exception
+      (identifier))))
