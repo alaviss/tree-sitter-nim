@@ -107,8 +107,22 @@ module.exports = grammar({
     ),
 
     _statement_simple: $ => choice(
-      $._expression
+      $._expression,
+      $.import_statement
     ),
+
+    import_statement: $ => prec.left(seq(
+      styleInsensitive('import'),
+      optional($._indent_ge),
+      repeatSepNL1(',', field('module', $._expression)),
+      optional($.import_exception)
+    )),
+
+    import_exception: $ => prec.left(seq(
+      styleInsensitive('except'),
+      optional($._indent_ge),
+      repeatSepNL1(',', $._expression)
+    )),
 
     _declaration: $ => choice(
       $.const_section,

@@ -70,3 +70,25 @@ while true:
         condition: (boolean_literal)
         body: (statement_list
           (identifier))))))
+
+=================
+Import statements
+=================
+
+import X
+
+import Y, Z,
+  J, K except F
+
+---
+
+(source_file
+  (import_statement
+    module: (identifier))
+  (import_statement
+    module: (identifier)
+    module: (identifier)
+    module: (identifier)
+    module: (identifier)
+    (import_exception
+      (identifier))))
