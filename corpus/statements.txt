@@ -131,3 +131,20 @@ from X import Y
   (import_from_statement
     module: (identifier)
     symbol: (identifier)))
+
+==================
+Include statements
+==================
+
+include stuff, "foo.txt"
+
+include X
+
+---
+
+(source_file
+  (include_statement
+    path: (identifier)
+    path: (string_literal))
+  (include_statement
+    path: (identifier)))
