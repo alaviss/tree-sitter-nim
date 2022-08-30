@@ -167,3 +167,22 @@ discard bar
   (discard_statement)
   (discard_statement
     (identifier)))
+
+==============
+Asm statements
+==============
+
+asm """
+mov
+ret
+"""
+
+asm "ret"
+
+---
+
+(source_file
+  (asm_statement
+    (string_literal))
+  (asm_statement
+    (string_literal)))

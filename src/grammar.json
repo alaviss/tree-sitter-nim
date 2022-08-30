@@ -339,6 +339,10 @@
         {
           "type": "SYMBOL",
           "name": "discard_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "asm_statement"
         }
       ]
     },
@@ -755,6 +759,19 @@
               "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "asm_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "PATTERN",
+          "value": "a_?[sS]_?[mM]"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "string_literal"
         }
       ]
     },

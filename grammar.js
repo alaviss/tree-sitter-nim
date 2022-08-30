@@ -112,7 +112,8 @@ module.exports = grammar({
       $.export_statement,
       $.import_from_statement,
       $.include_statement,
-      $.discard_statement
+      $.discard_statement,
+      $.asm_statement
     ),
 
     import_statement: $ => prec.left(seq(
@@ -153,6 +154,11 @@ module.exports = grammar({
     discard_statement: $ => seq(
       styleInsensitive('discard'),
       optional($._expression)
+    ),
+
+    asm_statement: $ => seq(
+      styleInsensitive('asm'),
+      $.string_literal
     ),
 
     _declaration: $ => choice(

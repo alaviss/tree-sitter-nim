@@ -59,6 +59,21 @@
     }
   },
   {
+    "type": "asm_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "string_literal",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "block",
     "named": true,
     "fields": {
@@ -1366,6 +1381,10 @@
       "required": false,
       "types": [
         {
+          "type": "asm_statement",
+          "named": true
+        },
+        {
           "type": "block",
           "named": true
         },
@@ -1468,6 +1487,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "asm_statement",
+          "named": true
+        },
         {
           "type": "block",
           "named": true
