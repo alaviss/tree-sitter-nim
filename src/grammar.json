@@ -367,6 +367,10 @@
         {
           "type": "SYMBOL",
           "name": "bind_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "mixin_statement"
         }
       ]
     },
@@ -913,6 +917,44 @@
           {
             "type": "PATTERN",
             "value": "b_?[iI]_?[nN]_?[dD]"
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_expression"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": ","
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_expression"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "mixin_statement": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "PATTERN",
+            "value": "m_?[iI]_?[xX]_?[iI]_?[nN]"
           },
           {
             "type": "SEQ",

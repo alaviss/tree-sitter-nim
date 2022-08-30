@@ -119,7 +119,8 @@ module.exports = grammar({
       $.raise_statement,
       $.return_statement,
       $.yield_statement,
-      $.bind_statement
+      $.bind_statement,
+      $.mixin_statement
     ),
 
     import_statement: $ => prec.left(seq(
@@ -194,6 +195,11 @@ module.exports = grammar({
 
     bind_statement: $ => prec.left(seq(
       styleInsensitive('bind'),
+      repeatSep1(',', $._expression)
+    )),
+
+    mixin_statement: $ => prec.left(seq(
+      styleInsensitive('mixin'),
       repeatSep1(',', $._expression)
     )),
 

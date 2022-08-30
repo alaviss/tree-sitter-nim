@@ -264,3 +264,21 @@ bind foo
     (identifier))
   (bind_statement
     (identifier)))
+
+================
+Mixin statements
+================
+
+mixin x, y, z
+
+mixin foo
+
+---
+
+(source_file
+  (mixin_statement
+    (identifier)
+    (identifier)
+    (identifier))
+  (mixin_statement
+    (identifier)))
