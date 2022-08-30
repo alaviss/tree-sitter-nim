@@ -228,3 +228,18 @@ raise exp
 (source_file
   (raise_statement
     (identifier)))
+
+=================
+Return statements
+=================
+
+return
+
+return X
+
+---
+
+(source_file
+  (return_statement)
+  (return_statement
+    (identifier)))
