@@ -111,7 +111,8 @@ module.exports = grammar({
       $.import_statement,
       $.export_statement,
       $.import_from_statement,
-      $.include_statement
+      $.include_statement,
+      $.discard_statement
     ),
 
     import_statement: $ => prec.left(seq(
@@ -148,6 +149,11 @@ module.exports = grammar({
       optional($._indent_ge),
       repeatSepNL1(',', field('path', $._expression))
     )),
+
+    discard_statement: $ => seq(
+      styleInsensitive('discard'),
+      optional($._expression)
+    ),
 
     _declaration: $ => choice(
       $.const_section,

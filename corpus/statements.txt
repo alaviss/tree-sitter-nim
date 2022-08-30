@@ -148,3 +148,22 @@ include X
     path: (string_literal))
   (include_statement
     path: (identifier)))
+
+==================
+Discard statements
+==================
+
+discard "foo"
+
+discard
+
+discard bar
+
+---
+
+(source_file
+  (discard_statement
+    (string_literal))
+  (discard_statement)
+  (discard_statement
+    (identifier)))

@@ -335,6 +335,10 @@
         {
           "type": "SYMBOL",
           "name": "include_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "discard_statement"
         }
       ]
     },
@@ -732,6 +736,27 @@
           }
         ]
       }
+    },
+    "discard_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "PATTERN",
+          "value": "d_?[iI]_?[sS]_?[cC]_?[aA]_?[rR]_?[dD]"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_expression"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
     },
     "_declaration": {
       "type": "CHOICE",
