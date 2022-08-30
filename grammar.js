@@ -115,7 +115,8 @@ module.exports = grammar({
       $.discard_statement,
       $.asm_statement,
       $.break_statement,
-      $.continue_statement
+      $.continue_statement,
+      $.raise_statement
     ),
 
     import_statement: $ => prec.left(seq(
@@ -171,6 +172,11 @@ module.exports = grammar({
     continue_statement: $ => seq(
       styleInsensitive('continue'),
       optional(field('label', $._expression))
+    ),
+
+    raise_statement: $ => seq(
+      styleInsensitive('raise'),
+      $._expression
     ),
 
     _declaration: $ => choice(

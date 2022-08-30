@@ -216,3 +216,15 @@ continue blck
   (continue_statement)
   (continue_statement
     label: (identifier)))
+
+================
+Raise statements
+================
+
+raise exp
+
+---
+
+(source_file
+  (raise_statement
+    (identifier)))
