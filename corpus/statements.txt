@@ -246,3 +246,21 @@ return X
   (return_statement)
   (return_statement
     (identifier)))
+
+===============
+Bind statements
+===============
+
+bind x, y, z
+
+bind foo
+
+---
+
+(source_file
+  (bind_statement
+    (identifier)
+    (identifier)
+    (identifier))
+  (bind_statement
+    (identifier)))

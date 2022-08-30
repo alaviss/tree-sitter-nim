@@ -363,6 +363,10 @@
         {
           "type": "SYMBOL",
           "name": "yield_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "bind_statement"
         }
       ]
     },
@@ -899,6 +903,44 @@
           "name": "_expression"
         }
       ]
+    },
+    "bind_statement": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "PATTERN",
+            "value": "b_?[iI]_?[nN]_?[dD]"
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_expression"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": ","
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_expression"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
     },
     "_declaration": {
       "type": "CHOICE",

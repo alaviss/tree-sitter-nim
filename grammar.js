@@ -118,7 +118,8 @@ module.exports = grammar({
       $.continue_statement,
       $.raise_statement,
       $.return_statement,
-      $.yield_statement
+      $.yield_statement,
+      $.bind_statement
     ),
 
     import_statement: $ => prec.left(seq(
@@ -190,6 +191,11 @@ module.exports = grammar({
       styleInsensitive('yield'),
       $._expression
     ),
+
+    bind_statement: $ => prec.left(seq(
+      styleInsensitive('bind'),
+      repeatSep1(',', $._expression)
+    )),
 
     _declaration: $ => choice(
       $.const_section,
