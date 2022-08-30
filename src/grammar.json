@@ -347,6 +347,10 @@
         {
           "type": "SYMBOL",
           "name": "break_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "continue_statement"
         }
       ]
     },
@@ -785,6 +789,31 @@
         {
           "type": "PATTERN",
           "value": "b_?[rR]_?[eE]_?[aA]_?[kK]"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "label",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_expression"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "continue_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "PATTERN",
+          "value": "c_?[oO]_?[nN]_?[tT]_?[iI]_?[nN]_?[uU]_?[eE]"
         },
         {
           "type": "CHOICE",

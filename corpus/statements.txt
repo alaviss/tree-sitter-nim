@@ -201,3 +201,18 @@ break blck
   (break_statement)
   (break_statement
     label: (identifier)))
+
+===================
+Continue statements
+===================
+
+con_tiNue
+
+continue blck
+
+---
+
+(source_file
+  (continue_statement)
+  (continue_statement
+    label: (identifier)))
