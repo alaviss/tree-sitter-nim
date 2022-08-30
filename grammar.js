@@ -113,7 +113,8 @@ module.exports = grammar({
       $.import_from_statement,
       $.include_statement,
       $.discard_statement,
-      $.asm_statement
+      $.asm_statement,
+      $.break_statement
     ),
 
     import_statement: $ => prec.left(seq(
@@ -159,6 +160,11 @@ module.exports = grammar({
     asm_statement: $ => seq(
       styleInsensitive('asm'),
       $.string_literal
+    ),
+
+    break_statement: $ => seq(
+      styleInsensitive('break'),
+      optional(field('label', $._expression))
     ),
 
     _declaration: $ => choice(

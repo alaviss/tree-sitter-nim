@@ -186,3 +186,18 @@ asm "ret"
     (string_literal))
   (asm_statement
     (string_literal)))
+
+================
+Break statements
+================
+
+bRe_ak
+
+break blck
+
+---
+
+(source_file
+  (break_statement)
+  (break_statement
+    label: (identifier)))
