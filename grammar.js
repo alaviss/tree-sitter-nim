@@ -117,7 +117,8 @@ module.exports = grammar({
       $.break_statement,
       $.continue_statement,
       $.raise_statement,
-      $.return_statement
+      $.return_statement,
+      $.yield_statement
     ),
 
     import_statement: $ => prec.left(seq(
@@ -177,12 +178,17 @@ module.exports = grammar({
 
     raise_statement: $ => seq(
       styleInsensitive('raise'),
-      $._expression
+      optional($._expression)
     ),
 
     return_statement: $ => seq(
       styleInsensitive('return'),
       optional($._expression)
+    ),
+
+    yield_statement: $ => seq(
+      styleInsensitive('yield'),
+      $._expression
     ),
 
     _declaration: $ => choice(

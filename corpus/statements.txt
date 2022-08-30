@@ -223,11 +223,14 @@ Raise statements
 
 raise exp
 
+raise
+
 ---
 
 (source_file
   (raise_statement
-    (identifier)))
+    (identifier))
+  (raise_statement))
 
 =================
 Return statements

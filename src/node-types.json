@@ -1467,7 +1467,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "block",
@@ -1729,6 +1729,10 @@
         {
           "type": "while",
           "named": true
+        },
+        {
+          "type": "yield_statement",
+          "named": true
         }
       ]
     }
@@ -1851,6 +1855,10 @@
         },
         {
           "type": "while",
+          "named": true
+        },
+        {
+          "type": "yield_statement",
           "named": true
         }
       ]
@@ -2358,6 +2366,65 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "yield_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "boolean_literal",
+          "named": true
+        },
+        {
+          "type": "call",
+          "named": true
+        },
+        {
+          "type": "case",
+          "named": true
+        },
+        {
+          "type": "float_literal",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "if",
+          "named": true
+        },
+        {
+          "type": "integer_literal",
+          "named": true
+        },
+        {
+          "type": "string_literal",
+          "named": true
+        },
+        {
+          "type": "try",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "when",
+          "named": true
+        }
+      ]
     }
   },
   {

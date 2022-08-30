@@ -359,6 +359,10 @@
         {
           "type": "SYMBOL",
           "name": "return_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "yield_statement"
         }
       ]
     },
@@ -849,8 +853,16 @@
           "value": "r_?[aA]_?[iI]_?[sS]_?[eE]"
         },
         {
-          "type": "SYMBOL",
-          "name": "_expression"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_expression"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -872,6 +884,19 @@
               "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "yield_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "PATTERN",
+          "value": "y_?[iI]_?[eE]_?[lL]_?[dD]"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_expression"
         }
       ]
     },
