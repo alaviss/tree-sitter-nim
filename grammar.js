@@ -1,556 +1,228 @@
-/* Copyright (c) 2022 Leorize <leorize+oss@disroot.org>
+/* Copyright 2023 Leorize <leorize+oss@disroot.org>
  *
  * SPDX-License-Identifier: MPL-2.0
  */
 
-const
-  BooleanLiterals = ['on', 'off', 'true', 'false'].map(styleInsensitive),
+/// <reference types="tree-sitter-cli/dsl" />
 
-  /* Inline rules */
-  Digits = {
-    decimal: optionalUnderscore(/[0-9]/),
-    hexadecimal: optionalUnderscore(/[0-9a-fA-F]/),
-    octal: optionalUnderscore(/[0-7]/),
-    binary: optionalUnderscore(/[01]/)
-  },
-
-  Literals = {
-    decimal: Digits.decimal,
-    hexadecimal: seq(/0[xX]/, Digits.hexadecimal),
-    octal: seq('0o', Digits.octal),
-    binary: seq(/0[bB]/, Digits.binary)
-  },
-
-  NumericLiteral = choice(
-    Literals.decimal, Literals.hexadecimal, Literals.octal, Literals.binary
-  ),
-
-  LiteralSuffix = {
-    integer: seq(optional("'"), choice(/[uU]/, seq(/[iIuU]/, /8|16|32|64/))),
-    float: seq(optional("'"), seq(/[fFdD]/, optional(/32|64|128/))),
-  };
+const DecimalLiteral = sep1(/[0-9]+/, "_");
+const Identifier = seq(
+  /[a-zA-Z\x80-\xff]+/,
+  repeat(/[a-zA-Z\x80-\xff0-9]+/),
+  repeat(seq("_", /[a-zA-Z\x80-\xff0-9]+/))
+);
 
 module.exports = grammar({
-  name: 'nim',
+  name: "nim",
 
   word: $ => $.identifier,
-
-  externals: $ => [
-    $._layout_indent_start,
-    $._layout_indent,
-    $._layout_indent_eq,
-    $._layout_indent_gt,
-    $._layout_dedent,
-    $._long_string_quotes,
-    $._newline,
-    $._block_comment_specials
-  ],
-
-  extras: $ => [' ', $._newline_gt, $.block_comment, $.comment],
-
-  conflicts: $ => [
-    [$.case],
-    [$.if],
-    [$.try],
-    [$.when],
-    [$.object_type]
-  ],
+  externals: $ => [$._long_string_quote, $._terminator],
 
   rules: {
-    source_file: $ => seq(
-      repeat($._newline),
-      $._layout_indent_start,
-      optional(repeatSep1($._indent_eq, $._statement)),
-      repeat($._newline)
-    ),
+    source_file: $ => repeat(seq($._literals, $._terminator)),
 
-    statement_list: $ => prec.right(choice(
-      repeatSep1(';', $._statement_simple),
-      seq(
-        $._indent,
-        repeatSep1(choice($._indent_eq, ';'), $._statement),
-        $._dedent
-      )
-    )),
-
-    _statement: $ => choice(
-      $._declaration,
-      $._statement_simple,
-      $.for,
-      $.while
-    ),
-
-    for: $ => seq(
-      styleInsensitive('for'),
-      field('left', alias($._pattern_list, $.pattern_list)),
-      styleInsensitive('in'),
-      field('right', $._expression),
-      ':',
-      field('body', $.statement_list)
-    ),
-
-    _pattern_list: $ => prec.right(repeatSep1(
-      ',', choice($.identifier, $.tuple_pattern)
-    )),
-
-    tuple_pattern: $ => seq(
-      '(', repeatSep1(',', $._pattern_list), ')'
-    ),
-
-    while: $ => seq(
-      styleInsensitive('while'),
-      field('condition', $._expression),
-      ':',
-      field('body', $.statement_list)
-    ),
-
-    _statement_simple: $ => choice(
-      $._expression,
-      $.import_statement,
-      $.export_statement,
-      $.import_from_statement,
-      $.include_statement,
-      $.discard_statement,
-      $.asm_statement,
-      $.break_statement,
-      $.continue_statement,
-      $.raise_statement,
-      $.return_statement,
-      $.yield_statement,
-      $.bind_statement,
-      $.mixin_statement
-    ),
-
-    import_statement: $ => prec.left(seq(
-      styleInsensitive('import'),
-      repeatSep1(',', field('module', $._expression)),
-      optional($.import_exception)
-    )),
-
-    export_statement: $ => prec.left(seq(
-      styleInsensitive('export'),
-      repeatSep1(',', field('symbol', $._expression)),
-      optional(alias($.import_exception, $.export_exception))
-    )),
-
-    import_exception: $ => prec.left(seq(
-      styleInsensitive('except'),
-      repeatSep1(',', $._expression)
-    )),
-
-    import_from_statement: $ => prec.left(seq(
-      styleInsensitive('from'),
-      field('module', $._expression),
-      styleInsensitive('import'),
-      repeatSep1(',', field('symbol', $._expression))
-    )),
-
-    include_statement: $ => prec.left(seq(
-      styleInsensitive('include'),
-      repeatSep1(',', field('path', $._expression))
-    )),
-
-    discard_statement: $ => seq(
-      styleInsensitive('discard'),
-      optional($._expression)
-    ),
-
-    asm_statement: $ => seq(
-      styleInsensitive('asm'),
-      $.string_literal
-    ),
-
-    break_statement: $ => seq(
-      styleInsensitive('break'),
-      optional(field('label', $._expression))
-    ),
-
-    continue_statement: $ => seq(
-      styleInsensitive('continue'),
-      optional(field('label', $._expression))
-    ),
-
-    raise_statement: $ => seq(
-      styleInsensitive('raise'),
-      optional($._expression)
-    ),
-
-    return_statement: $ => seq(
-      styleInsensitive('return'),
-      optional($._expression)
-    ),
-
-    yield_statement: $ => seq(
-      styleInsensitive('yield'),
-      $._expression
-    ),
-
-    bind_statement: $ => prec.left(seq(
-      styleInsensitive('bind'),
-      repeatSep1(',', $._expression)
-    )),
-
-    mixin_statement: $ => prec.left(seq(
-      styleInsensitive('mixin'),
-      repeatSep1(',', $._expression)
-    )),
-
-    _declaration: $ => choice(
-      $.const_section,
-      $.var_section,
-      $.let_section,
-      $.type_section
-      // TODO: more declarations
-    ),
-
-    const_section: $ => seq(
-      styleInsensitive('const'),
-      singularOrSection($, $._variable_declaration_indent)
-    ),
-
-    var_section: $ => seq(
-      styleInsensitive('var'),
-      singularOrSection($, $._variable_declaration_indent)
-    ),
-
-    let_section: $ => seq(
-      styleInsensitive('let'),
-      singularOrSection($, $._variable_declaration_indent)
-    ),
-
-    _variable_declaration_indent: $ => alias(
-      $._symbol_declaration_list, $.variable_declaration
-    ),
-
-    type_section: $ => seq(
-      styleInsensitive('type'),
-      singularOrSection($, $.type_declaration)
-    ),
-
-    type_declaration: $ => seq(
-      field('name', $.identifier),
-      '=',
-      field('type', $._type)
-    ),
-
-    _type: $ => choice(
-      $._type_identifier,
-      $.tuple_type,
-      $.object_type,
-      $.distinct_type,
-      $.ref_type
-    ),
-
-    tuple_type: $ => seq(
-      styleInsensitive('tuple'),
-      $.field_declaration_list
-    ),
-
-    object_type: $ => seq(
-      styleInsensitive('object'),
-      optional($.field_declaration_list)
-    ),
-
-    field_declaration_list: $ => choice(
-      seq(
-        '[',
-        repeatSep1(
-          /[,;]/,
-          alias($._symbol_declaration_list, $.field_declaration)
-        ),
-        ']'
+    _literals: $ =>
+      choice(
+        $.boolean_literal,
+        $.char_literal,
+        $.custom_numeric_literal,
+        $.float_literal,
+        $.generalized_string_literal,
+        $.integer_literal,
+        $.nil_literal,
+        $.string_literal
       ),
+
+    boolean_literal: _ =>
+      token(
+        choice(
+          ignoreStyle("true"),
+          ignoreStyle("false"),
+          ignoreStyle("on"),
+          ignoreStyle("off")
+        )
+      ),
+
+    char_literal: $ =>
       seq(
-        $._indent,
-        repeat1(
-          seq(
-            $._indent_eq,
-            alias($._symbol_declaration_list, $.field_declaration)
+        "'",
+        choice(
+          token.immediate(/[^\x00-\x1f\\]/),
+          $._backslash_literal,
+          alias($._char_escape_sequence, $.escape_sequence)
+        ),
+        token.immediate("'")
+      ),
+
+    _backslash_literal: _ => token.immediate("\\\\"),
+
+    _char_escape_sequence: _ =>
+      token.immediate(
+        seq("\\", choice(/[rcnlftv\\"'abe]/, /\d+/, /x[0-9a-fA-F]{2}/))
+      ),
+
+    integer_literal: $ =>
+      seq(
+        $._numeric_literal,
+        optional(token.immediate("'")),
+        optional(token.immediate(choice(/[uU]/, /[iIuU](8|16|32|64)/)))
+      ),
+
+    float_literal: $ => {
+      const FloatSuffix = /[fFdD](32|64|128)?/;
+      const Apostrophe = optional(token.immediate("'"));
+
+      return choice(
+        seq($._numeric_literal, Apostrophe, token.immediate(FloatSuffix)),
+        seq(
+          $._decimal_float_literal,
+          Apostrophe,
+          optional(token.immediate(FloatSuffix))
+        )
+      );
+    },
+
+    custom_numeric_literal: $ =>
+      seq(
+        choice($._numeric_literal, $._decimal_float_literal),
+        field("function", seq(token.immediate("'"), $._identifier_imm))
+      ),
+
+    _numeric_literal: _ =>
+      token(
+        seq(
+          optional("-"),
+          choice(
+            DecimalLiteral,
+            seq(/0[xX]/, sep1(/[0-9a-fA-F]+/, "_")),
+            seq("0o", sep1(/[0-7]+/, "_")),
+            seq(/0[bB]/, sep1(/[01]+/, "_"))
+          )
+        )
+      ),
+
+    _decimal_float_literal: _ =>
+      token(
+        seq(
+          optional("-"),
+          DecimalLiteral,
+          seqReq1(seq(".", DecimalLiteral), seq(/[eE][+-]?/, DecimalLiteral))
+        )
+      ),
+
+    nil_literal: _ => ignoreStyle("nil"),
+
+    string_literal: $ =>
+      choice(
+        $._long_string_literal,
+        $._interpreted_string_literal,
+        $._raw_string_literal
+      ),
+
+    _interpreted_string_literal: $ =>
+      seq(
+        '"',
+        repeat(
+          choice(
+            token.immediate(/[^\n\r"\\]+/),
+            alias($._string_escape_sequence, $.escape_sequence)
           )
         ),
-        $._dedent
-      )
-    ),
-
-    _symbol_declaration_list: $ => seq(
-      repeatSep1(',', $._symbol_declaration),
-      optional(seq(':', field('type', $._type))),
-      optional(seq('=', field('value', $._expression)))
-    ),
-
-    _symbol_declaration: $ => choice(
-      field('name', $.identifier),
-      $.exported_symbol,
-      $.tuple_deconstruct_declaration
-    ),
-
-    tuple_deconstruct_declaration: $ => seq(
-      '(',
-      repeatSep1(',', $._symbol_declaration),
-      ')'
-    ),
-
-    exported_symbol: $ => seq(field('name', $.identifier), '*'),
-
-    distinct_type: $ => prec.left(1, seq(styleInsensitive('distinct'), $._type)),
-
-    ref_type: $ => seq(styleInsensitive('ref'), $._type),
-
-    _expression: $ => choice(
-      $.identifier,
-      $._literal,
-      $.call,
-      $.block,
-      $.if,
-      $.when,
-      $.case,
-      $.try
-    ),
-
-    call: $ => seq(
-      field('function', $.identifier),
-      field('arguments', $.argument_list)
-    ),
-
-    argument_list: $ => choice(
-      $._paren_argument_list,
-      $._command_argument_list
-    ),
-
-    _paren_argument_list: $ => seq(
-      token.immediate('('),
-      optional(repeatSep1(',', seq($._expression))),
-      ')'
-    ),
-
-    _command_argument_list: $ => prec.left(
-      repeatSep1(',', $._expression)
-    ),
-
-    block: $ => seq(
-      styleInsensitive('block'),
-      optional(field('name', $.identifier)),
-      ':',
-      field('body', $.statement_list)
-    ),
-
-    if: $ => seq(
-      styleInsensitive('if'),
-      field('condition', $._expression),
-      ':',
-      field('consequence', $.statement_list),
-      repeat(seq(optional($._indent_ge), field('alternative', $.elif_clause))),
-      optional(seq(optional($._indent_ge), field('alternative', $.else_clause)))
-    ),
-
-    when: $ => seq(
-      styleInsensitive('when'),
-      field('condition', $._expression),
-      ':',
-      field('consequence', $.statement_list),
-      repeat(seq(optional($._indent_ge), field('alternative', $.elif_clause))),
-      optional(seq(optional($._indent_ge), field('alternative', $.else_clause)))
-    ),
-
-    case: $ => seq(
-      styleInsensitive('case'),
-      field('value', $._expression),
-      optional(':'),
-      optional(repeat1(seq(optional($._indent_ge), $.of_branch))),
-      repeat(seq(optional($._indent_ge), field('alternative', $.elif_clause))),
-      optional(seq(optional($._indent_ge), field('alternative', $.else_clause)))
-    ),
-
-    of_branch: $ => seq(
-      styleInsensitive('of'),
-      repeatSep1(',', field('value', $._expression)),
-      ':',
-      field('body', $.statement_list)
-    ),
-
-    elif_clause: $ => seq(
-      styleInsensitive('elif'),
-      field('condition', $._expression),
-      ':',
-      field('consequence', $.statement_list)
-    ),
-
-    else_clause: $ => seq(
-      styleInsensitive('else'),
-      ':',
-      field('body', $.statement_list)
-    ),
-
-    try: $ => seq(
-      styleInsensitive('try'),
-      ':',
-      field('body', $.statement_list),
-      repeat(seq($._indent_eq, $.except_branch)),
-      optional(seq($._indent_eq, $.finally_branch))
-    ),
-
-    except_branch: $ => seq(
-      styleInsensitive('except'),
-      optional(repeatSep1(',', field('exception', $._expression))),
-      ':',
-      field('body', $.statement_list),
-    ),
-
-    finally_branch: $ => seq(
-      styleInsensitive('finally'),
-      ':',
-      field('body', $.statement_list)
-    ),
-
-    _literal: $ => choice(
-      $.boolean_literal,
-      $.integer_literal,
-      $.float_literal,
-      $.string_literal,
-      $.tuple
-    ),
-
-    boolean_literal: $ => choice(
-      ...BooleanLiterals
-    ),
-
-    integer_literal: $ => token(seq(
-      optional('-'),
-      NumericLiteral,
-      optional(LiteralSuffix.integer)
-    )),
-
-    float_literal: $ => token(choice(
-      seq(
-        optional('-'),
-        NumericLiteral,
-        LiteralSuffix.float
+        token.immediate('"')
       ),
-      seq(
-        optional('-'),
-        Literals.decimal,
-        optional(seq('.', Literals.decimal)),
-        optional(seq(/[eE][+-]?/, Literals.decimal)),
-        optional(LiteralSuffix.float)
-      )
-    )),
 
-    string_literal: $ => choice(
-      $._long_string_literal,
-      $._raw_string_literal,
-      $._interpreted_string_literal
-    ),
-
-    _long_string_literal: $ => seq(/r?"""/, repeat($._long_string_content), '"""'),
-
-    _long_string_content: $ => choice(
-      token.immediate(/[^"\n\r]+/),
-      $._newline,
-      $._long_string_quotes
-    ),
-
-    _raw_string_literal: $ => seq(
-      'r"',
-      token.immediate(/[^"\n\r]*/),
-      repeat(
-        seq($._escaped_double_quote, token.immediate(/[^"\n\r]*/))
-      ),
-      '"'
-    ),
-
-    _interpreted_string_literal: $ => seq(
-      '"',
-      repeat(choice(token.immediate(/[^"\\\n\r]+/), $.escape_sequence)),
-      '"'
-    ),
-
-    escape_sequence: $ => token.immediate(
-      seq(
-        '\\',
-        choice(
-          'p', 'r', 'c', 'n', 'l', 'f', 't', 'v', '\\', '"', "'", /\d+/, 'a',
-          'e', /x[0-9a-fA-F]{2}/, /u(?:[0-9a-fA-F]{4}|\{[0-9a-fA-F]+\})/
+    _string_escape_sequence: $ =>
+      choice(
+        $._char_escape_sequence,
+        token.immediate("\\p"),
+        token.immediate(
+          seq("\\u", choice(/[0-9a-fA-F]{4}/, /\{[0-9a-fA-F]+\}/))
         )
-      )
-    ),
+      ),
 
-    _escaped_double_quote: $ => alias(token.immediate('""'), $.escape_sequence),
+    _raw_string_content: _ =>
+      token.immediate(
+        seq(
+          /[^\n\r"]+/,
+          repeat(seq('""', optional(token.immediate(/[^\n\r"]+/))))
+        )
+      ),
 
-    tuple: $ => seq(
-      '(',
-      $._expression, ',',
-      optional(repeatSep1(',', $._expression)),
-      ')'
-    ),
+    _raw_string_literal: $ =>
+      seq('r"', optional($._raw_string_content), token.immediate('"')),
 
-    /* Identifier rules must be last to avoid overtaking keywords in precedence */
-    identifier: $ => /[a-zA-Z\x80-\xff](?:_?[a-zA-Z\x80-\xff0-9])*/,
-    _type_identifier: $ => alias($.identifier, $.type_identifier),
+    _long_string_literal: $ =>
+      seq(/r?"""/, optional($._long_string_content), token.immediate('"""')),
 
-    block_comment: $ => seq(
-      '#[', repeat($._block_comment_content), ']#'
-    ),
+    _long_string_content: $ =>
+      repeat1(
+        choice(token.immediate(/[^"]+/), alias($._long_string_quote, '"'))
+      ),
 
-    _block_comment_content: $ => choice(
-      token.immediate(/[^#\]\n\r]+/),
-      $._newline,
-      $._block_comment_specials
-    ),
+    generalized_string_literal: $ =>
+      choice($._generalized_short_string, $._generalized_long_string),
 
-    comment: $ => /#(?:[^\[\n\r][^\n\r]*)*/,
+    _generalized_short_string: $ =>
+      seq(
+        field("function", $.identifier),
+        token.immediate('"'),
+        optional($._raw_string_content),
+        token.immediate('"')
+      ),
 
-    _indent: $ => seq(repeat($._newline), $._layout_indent),
-    _indent_eq: $ => seq(repeat($._newline), $._layout_indent_eq),
-    _indent_gt: $ => seq(repeat($._newline), $._layout_indent_gt),
-    _indent_ge: $ => seq(repeat($._newline), choice($._layout_indent_gt, $._layout_indent_eq)),
-    _dedent: $ => seq(repeat($._newline), $._layout_dedent),
+    _generalized_long_string: $ =>
+      seq(
+        field("function", $.identifier),
+        token.immediate('"""'),
+        optional($._long_string_content),
+        token.immediate('"""')
+      ),
 
-    _newline_gt: $ => seq($._newline, $._indent_gt)
-  }
+    _identifier_imm: $ => alias(token.immediate(Identifier), $.identifier),
+    identifier: _ => token(Identifier),
+  },
 });
 
-function styleInsensitive(ident) {
-  let result = ident[0];
-  for (let i = 1, L = ident.length; i < L; i++) {
-    const lower = ident[i].toLowerCase();
-    const upper = ident[i].toUpperCase();
-    result = lower === upper
-      ? result.concat(`_?${lower}`)
-      : result.concat(`_?[${lower}${upper}]`);
-  }
-
-  return new RegExp(result);
-}
-
-function singularOrSection($, sectionBody) {
-  return choice(
-    sectionBody,
-    seq(
-      $._indent,
-      repeatSep1(
-        $._indent_eq,
-        sectionBody
-      ),
-      $._dedent
-    )
-  )
-}
-
-function repeatSep1(sep, rule) {
+/**
+ * Produce a rule that matches one or more occurance of a given rule.
+ * Each of the rules are separated by the given separator.
+ * @param {RuleOrLiteral} rule - The rule to be matched.
+ * @param {RuleOrLiteral} sep - The matched separator.
+ */
+function sep1(rule, sep) {
   return seq(rule, repeat(seq(sep, rule)));
 }
 
-function optionalUnderscore(rule) {
-  return seq(rule, repeat(seq(optional('_'), rule)));
+/**
+ * Produce a rule to match nim-style style insensitive identifiers
+ *
+ * @param {string} ident - The string to match style-insensitively.
+ */
+function ignoreStyle(ident) {
+  /** @type {RuleOrLiteral[]} */
+  let rules = [ident[0]];
+  for (let i = 1, L = ident.length; i < L; i++) {
+    const lower = ident[i].toLowerCase();
+    const upper = ident[i].toUpperCase();
+
+    rules.push(optional("_"), choice(lower, upper));
+  }
+
+  return token(seq(...rules));
 }
 
-function repeatIndentGE1($, rule) {
-  return choice(
-    repeat1(seq($._indent_eq, rule)),
-    seq(
-      $._indent,
-      repeatSep1($._indent_eq, rule),
-      $._dedent
-    )
-  )
+/**
+ * Produce a rule where the given rules matches in order, but only one of them has to match.
+ *
+ * @param {RuleOrLiteral[]} rules - The rules to be matched.
+ */
+function seqReq1(...rules) {
+  /** @type {Rule[]} */
+  let result = [];
+
+  while (rules.length > 0) {
+    result.push(seq(rules.shift(), ...rules.map(x => optional(x))));
+  }
+
+  return choice(...result);
 }

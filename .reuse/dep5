@@ -1,0 +1,9 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: tree-sitter-nim
+Upstream-Contact: Leorize <leorize+oss@disroot.org>
+Source: https://github.com/alaviss/tree-sitter-nim
+
+Files: corpus/*
+Copyright: 2022-2023 Leorize <leorize+oss@disroot.org>
+License: MPL-2.0
+
