@@ -16,7 +16,8 @@ module.exports = grammar({
   name: "nim",
 
   word: $ => $.identifier,
-  externals: $ => [$._long_string_quote, $._terminator],
+  externals: $ => [$.comment, $._long_string_quote, $._terminator],
+  extras: $ => [/[\n\r ]+/, $.comment],
 
   rules: {
     source_file: $ => repeat(seq($._literals, $._terminator)),
