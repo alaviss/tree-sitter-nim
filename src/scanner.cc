@@ -3,8 +3,12 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
+#include <algorithm>
+#include <array>
 #include <bitset>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
@@ -14,8 +18,29 @@
 #include "tree_sitter/parser.h"
 
 /// Token types understood by the parser. Keep up-to-date with grammar.js
-enum TokenType { COMMENT, LONG_STRING_QUOTE, TERMINATOR, END_TOKEN_TYPE };
+enum TokenType {
+  COMMENT,
+  LONG_STRING_QUOTE,
+  TERMINATOR,
+  COLON,
+  EQ,
+  BINOP10_LEFT,
+  BINOP10_RIGHT,
+  BINOP9,
+  BINOP8,
+  BINOP7,
+  BINOP6,
+  BINOP5,
+  BINOP2,
+  BINOP1,
+  BINOP0,
+  END_TOKEN_TYPE
+};
 static constexpr auto START_TOKEN_TYPE = COMMENT;
+
+using ValidSymbols = std::bitset<END_TOKEN_TYPE>;
+
+static constexpr ValidSymbols BINOPS = 0b1111111111000;
 
 /// Context for a scanning session.
 ///
@@ -42,6 +67,13 @@ public:
   [[nodiscard]] auto valid(enum TokenType type) const -> bool {
     return valid_symbols[type];
   }
+
+  [[nodiscard]] auto valid(ValidSymbols sym) const -> bool {
+    return (valid_symbols & sym).any();
+  }
+
+  /// Returns whether tree-sitter is in error recovery mode.
+  [[nodiscard]] auto error() const -> bool { return valid_symbols.all(); }
 
   /// Returns the current lookahead symbol.
   [[nodiscard]] auto lookahead() const -> int32_t { return lexer->lookahead; }
@@ -92,7 +124,7 @@ public:
 private:
   TSLexer *lexer;
   uint32_t state_{};
-  std::bitset<3> valid_symbols;
+  ValidSymbols valid_symbols;
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -100,6 +132,17 @@ private:
   {                                                                            \
     const auto tempState = (ctx).state();                                      \
     if (fn((ctx))) {                                                           \
+      return true;                                                             \
+    }                                                                          \
+    if ((ctx).state() != tempState)                                            \
+      return false;                                                            \
+  }
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TRY_LEXN(ctx, fn, ...)                                                 \
+  {                                                                            \
+    const auto tempState = (ctx).state();                                      \
+    if (fn((ctx), __VA_ARGS__)) {                                              \
       return true;                                                             \
     }                                                                          \
     if ((ctx).state() != tempState)                                            \
@@ -114,7 +157,7 @@ static auto lex_long_string_quote(Context &ctx) -> bool {
   if (ctx.valid(LONG_STRING_QUOTE) && ctx.lookahead() == '"') {
     ctx.consume();
     uint8_t quotes = 1;
-    while (ctx.lookahead() != '"' && quotes < 3) {
+    while (ctx.lookahead() == '"' && quotes < 3) {
       ctx.advance();
       quotes++;
     }
@@ -124,7 +167,178 @@ static auto lex_long_string_quote(Context &ctx) -> bool {
       return ctx.finish(LONG_STRING_QUOTE);
     }
 
-    return ctx.lookahead() == '"';
+    if (ctx.lookahead() == '"') {
+      return ctx.finish(LONG_STRING_QUOTE);
+    }
+  }
+
+  return false;
+}
+
+template <typename T, typename U, size_t N>
+static constexpr auto has_item(const std::array<T, N> &array, U item,
+                               size_t start = 0, size_t end = N) -> bool {
+  const auto last = array.begin() + end;
+  return std::find_if(array.begin() + start, last,
+                      [=](T value) -> bool { return value == item; }) != last;
+}
+
+template <typename T, typename U, typename I, size_t N>
+static constexpr auto has_item(const std::array<T, N> &array, U item,
+                               std::array<I, 2> range) -> bool {
+  return has_item(array, item, range[0], range[1]);
+}
+
+static constexpr std::array<char, 19> OP_CHARS = {
+    // OP10
+    '$', '^',
+    // OP9
+    '*', '%', '\\', '/',
+    // OP8
+    '+', '-', '~', '|',
+    // OP7
+    '&',
+    // OP6
+    '.',
+    // OP5
+    '=', '<', '>', '!',
+    // OP2
+    '@', ':', '?'};
+static constexpr std::array<uint8_t, 2> OP10L = {0, 1};
+static constexpr std::array<uint8_t, 2> OP10R = {1, 2};
+static constexpr std::array<uint8_t, 2> OP9 = {2, 6};
+static constexpr std::array<uint8_t, 2> OP8 = {6, 10};
+static constexpr std::array<uint8_t, 2> OP7 = {10, 11};
+static constexpr std::array<uint8_t, 2> OP6 = {11, 12};
+static constexpr std::array<uint8_t, 2> OP5 = {12, 16};
+static constexpr std::array<uint8_t, 2> OP2 = {16, 19};
+
+static constexpr std::array<uint16_t, 21> OP_UNICHARS = {
+    // *-like ops
+    u'∙', u'∘', u'×', u'★', u'⊗', u'⊘', u'⊙', u'⊛', u'⊠', u'⊡', u'∩', u'∧',
+    u'⊓',
+    // +-like ops
+    u'±', u'⊕', u'⊖', u'⊞', u'⊟', u'∪', u'∨', u'⊔'};
+static constexpr std::array<uint8_t, 2> OP_UNIMUL = {0, 13};
+static constexpr std::array<uint8_t, 2> OP_UNIADD = {13, 21};
+
+static auto classify_op(Context &ctx) -> TokenType {
+  if (has_item(OP_CHARS, ctx.lookahead(), OP10L)) {
+    return BINOP10_LEFT;
+  };
+  if (has_item(OP_CHARS, ctx.lookahead(), OP10R)) {
+    return BINOP10_RIGHT;
+  };
+  if (has_item(OP_CHARS, ctx.lookahead(), OP9) ||
+      has_item(OP_UNICHARS, ctx.lookahead(), OP_UNIMUL)) {
+    return BINOP9;
+  };
+  if (has_item(OP_CHARS, ctx.lookahead(), OP8) ||
+      has_item(OP_UNICHARS, ctx.lookahead(), OP_UNIADD)) {
+    return BINOP8;
+  };
+  if (has_item(OP_CHARS, ctx.lookahead(), OP7)) {
+    return BINOP7;
+  };
+  if (has_item(OP_CHARS, ctx.lookahead(), OP6)) {
+    return BINOP6;
+  };
+  if (has_item(OP_CHARS, ctx.lookahead(), OP5)) {
+    return BINOP5;
+  };
+  if (has_item(OP_CHARS, ctx.lookahead(), OP2)) {
+    return BINOP2;
+  }
+  return END_TOKEN_TYPE;
+}
+
+static auto lex_ops(Context &ctx, bool immediate) -> bool {
+  if (!ctx.valid(BINOPS)) {
+    return false;
+  }
+
+  TokenType result = classify_op(ctx);
+  uint32_t length = 0;
+
+  switch (result) {
+  case BINOP6:
+    // OP6 starts with ".."
+    if (ctx.consume() != '.') {
+      return false;
+    }
+    length++;
+    break;
+  case END_TOKEN_TYPE:
+    return false;
+  default:
+    break;
+  }
+
+  const uint32_t firstCh = ctx.lookahead();
+
+  enum { LAST_REGULAR, LAST_EQUAL, LAST_ARROW } last_item_kind = LAST_REGULAR;
+
+  while (has_item(OP_CHARS, ctx.lookahead()) ||
+         has_item(OP_UNICHARS, ctx.lookahead())) {
+    switch (ctx.lookahead()) {
+    case '=':
+    case '-':
+    case '~':
+      last_item_kind = ctx.lookahead() == '=' ? LAST_EQUAL : LAST_REGULAR;
+      if (ctx.consume() == '>') {
+        last_item_kind = LAST_ARROW;
+        ctx.consume();
+        length += 2;
+      } else {
+        length++;
+      }
+      break;
+    default:
+      ctx.consume();
+      length++;
+      last_item_kind = LAST_REGULAR;
+    }
+  }
+
+  switch (last_item_kind) {
+  case LAST_EQUAL:
+    switch (firstCh) {
+    case '<':
+    case '>':
+    case '!':
+    case '=':
+    case '~':
+    case '?':
+      break;
+    default:
+      result = BINOP1;
+    }
+    break;
+  case LAST_ARROW:
+    result = BINOP0;
+    break;
+  case LAST_REGULAR:
+    break;
+  }
+
+  if (length < 2) {
+    if (ctx.valid(COLON) && firstCh == ':') {
+      return ctx.finish(COLON);
+    }
+    if (ctx.valid(EQ) && firstCh == '=') {
+      return ctx.finish(EQ);
+    }
+  }
+
+  if (immediate) {
+    return ctx.finish(result);
+  }
+
+  switch (ctx.lookahead()) {
+  case ' ':
+  case '\n':
+  case '\r':
+    return ctx.finish(result);
   }
 
   return false;
@@ -133,7 +347,9 @@ static auto lex_long_string_quote(Context &ctx) -> bool {
 /// Handle lexing tasks that has to be done before any whitespace skipping
 /// happens.
 static auto lex_immediate(Context &ctx) -> bool {
-  return lex_long_string_quote(ctx);
+  TRY_LEX(ctx, lex_long_string_quote);
+  TRY_LEXN(ctx, lex_ops, true);
+  return false;
 }
 
 /// Handle simple lexing rules. These do not perform more than 1 character
@@ -308,6 +524,7 @@ auto tree_sitter_nim_external_scanner_scan(void * /*payload*/, TSLexer *lexer,
 
   TRY_LEX(ctx, lex_simple);
   TRY_LEX(ctx, lex_comment);
+  TRY_LEXN(ctx, lex_ops, false);
 
   return false;
 }

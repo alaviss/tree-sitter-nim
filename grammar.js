@@ -11,16 +11,243 @@ const Identifier = seq(
   repeat(/[a-zA-Z\x80-\xff0-9]+/),
   repeat(seq("_", /[a-zA-Z\x80-\xff0-9]+/))
 );
+const UnicodeMul = [
+  "∙",
+  "∘",
+  "×",
+  "★",
+  "⊗",
+  "⊘",
+  "⊙",
+  "⊛",
+  "⊠",
+  "⊡",
+  "∩",
+  "∧",
+  "⊓",
+];
+const UnicodeAdd = ["±", "⊕", "⊖", "⊞", "⊟", "∪", "∨", "⊔"];
+const OperatorChars = [
+  "=",
+  "+",
+  "-",
+  "*",
+  "/",
+  "<",
+  ">",
+  "@",
+  "$",
+  "~",
+  "&",
+  "%",
+  "|",
+  "!",
+  "?",
+  "^",
+  ".",
+  ":",
+  "\\",
+  ...UnicodeMul,
+  ...UnicodeAdd,
+];
+
+const Precedence = {
+  ColonEqExpr: 15,
+  Sigil: 14,
+  Dot: 13,
+  Suffix: 12,
+  Unary: 11,
+  Op10: 10,
+  Op9: 9,
+  Op8: 8,
+  Op7: 7,
+  Op6: 6,
+  Op5: 5,
+  Op4: 4,
+  Op3: 3,
+  Op2: 2,
+  Op1: 1,
+  Op0: 0,
+};
+
+const WordOp = {
+  9: token(choice(...["div", "mod", "shl", "shr"].map(ignoreStyle))),
+  5: token(
+    choice(
+      ...["not", "in", "notin", "is", "isnot", "of", "as", "from"].map(
+        ignoreStyle
+      )
+    )
+  ),
+  4: ignoreStyle("and"),
+  3: token(choice(...["or", "xor"].map(ignoreStyle))),
+};
 
 module.exports = grammar({
   name: "nim",
 
   word: $ => $.identifier,
-  externals: $ => [$.comment, $._long_string_quote, $._terminator],
+  externals: $ => [
+    $.comment,
+    $._long_string_quote,
+    $._terminator,
+    ":",
+    "=",
+    $._binop10l,
+    $._binop10r,
+    $._binop9,
+    $._binop8,
+    $._binop7,
+    $._binop6,
+    $._binop5,
+    $._binop2,
+    $._binop1,
+    $._binop0,
+  ],
   extras: $ => [/[\n\r ]+/, $.comment],
+  inline: $ => [$._maybe_colon_expression],
 
   rules: {
-    source_file: $ => repeat(seq($._literals, $._terminator)),
+    source_file: $ => repeat(seq($._expression, $._terminator)),
+
+    _expression: $ =>
+      choice(
+        $._literals,
+        $.accent_quoted,
+        $.binary_expression,
+        $.bracket_expression,
+        $.curly_expression,
+        $.dot_expression,
+        $.parenthesized_expression,
+        $.tuple,
+        $.unary_expression,
+        $.identifier
+      ),
+
+    colon_expression: $ =>
+      seq(field("left", $._expression), ":", field("right", $._expression)),
+    equal_expression: $ =>
+      seq(field("left", $._expression), "=", field("right", $._expression)),
+
+    _maybe_colon_expression: $ => choice($._expression, $.colon_expression),
+
+    tuple: $ =>
+      choice(
+        seq(
+          "(",
+          $._expression,
+          ",",
+          optional(sep1($._maybe_colon_expression, ",")),
+          ")"
+        ),
+        seq(
+          "(",
+          $.colon_expression,
+          repeat(seq(",", $._maybe_colon_expression)),
+          ")"
+        )
+      ),
+
+    parenthesized_expression: $ => seq("(", $._expression, ")"),
+
+    bracket_expression: $ =>
+      prec.left(
+        Precedence.Suffix,
+        seq(
+          field("left", $._expression),
+          "[",
+          field("right", $._expression),
+          "]"
+        )
+      ),
+
+    curly_expression: $ =>
+      prec.left(
+        Precedence.Suffix,
+        seq(
+          field("left", $._expression),
+          "{",
+          field("right", $._expression),
+          "}"
+        )
+      ),
+
+    dot_expression: $ =>
+      prec.left(
+        Precedence.Dot,
+        seq(
+          field("left", $._expression),
+          field(
+            "operator",
+            token(
+              seq(
+                ".",
+                optional(
+                  seq(
+                    choice(...OperatorChars.filter(x => x != ".")),
+                    repeat(choice(...OperatorChars))
+                  )
+                )
+              )
+            )
+          ),
+          field("right", $._expression)
+        )
+      ),
+
+    unary_expression: $ => {
+      /** @param {RuleOrLiteral} op */
+      const unaryExp = op => seq(op, field("argument", $._expression));
+      return choice(
+        prec.left(Precedence.Unary, unaryExp($._unary_operator)),
+        prec.left(
+          Precedence.Sigil,
+          unaryExp(seq("@", repeat(choice(...OperatorChars))))
+        )
+      );
+    },
+
+    _unary_operator: _ =>
+      token(
+        choice(
+          ...Object.values(WordOp),
+          seq(
+            choice(...OperatorChars.filter(x => x != "@")),
+            repeat(choice(...OperatorChars))
+          )
+        )
+      ),
+
+    binary_expression: $ => {
+      /** @param {RuleOrLiteral} op */
+      const binExp = op =>
+        seq(
+          field("left", $._expression),
+          field("operator", op),
+          field("right", $._expression)
+        );
+
+      return choice(
+        .../** @type {[Rule, number][]} */ ([
+          [$._binop10l, Precedence.Op10],
+          [$._binop9, Precedence.Op9],
+          [WordOp[9], Precedence.Op9],
+          [$._binop8, Precedence.Op8],
+          [$._binop7, Precedence.Op7],
+          [$._binop6, Precedence.Op6],
+          [$._binop5, Precedence.Op5],
+          [WordOp[5], Precedence.Op5],
+          [WordOp[4], Precedence.Op4],
+          [WordOp[3], Precedence.Op3],
+          [$._binop2, Precedence.Op2],
+          [$._binop1, Precedence.Op1],
+          [$._binop0, Precedence.Op0],
+        ]).map(([operator, precedence]) =>
+          prec.left(precedence, binExp(operator))
+        ),
+        prec.right(Precedence.Op10, binExp($._binop10r))
+      );
+    },
 
     _literals: $ =>
       choice(
@@ -179,6 +406,8 @@ module.exports = grammar({
         token.immediate('"""')
       ),
 
+    accent_quoted: $ =>
+      seq("`", repeat1(alias(/[^\x00-\x1f\r\n\t` ]+/, $.identifier)), "`"),
     _identifier_imm: $ => alias(token.immediate(Identifier), $.identifier),
     identifier: _ => token(Identifier),
   },

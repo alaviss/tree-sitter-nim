@@ -1,13 +1,239 @@
-# Copyright 2022 Leorize <leorize+oss@disroot.org>
-#
-# SPDX-License-Identifier: MPL-2.0
-# This Source Code Form is subject to the terms of the Mozilla Public License,
-# v. 2.0. If a copy of the MPL was not distributed with this file, You can
-# obtain one at https://mozilla.org/MPL/2.0/.
+================================================================================
+Quoted identifiers
+================================================================================
 
-===================
+`and`
+
+`T name`
+
+`x=`
+
+`==`
+
+`[]`
+
+`'u4`
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (accent_quoted
+    (identifier))
+  (accent_quoted
+    (identifier)
+    (identifier))
+  (accent_quoted
+    (identifier))
+  (accent_quoted
+    (identifier))
+  (accent_quoted
+    (identifier))
+  (accent_quoted
+    (identifier)))
+
+================================================================================
+Unary expressions
+================================================================================
+
+$a
+
+-b
+
+%*c
+
+$a.b
+
+@a.b
+
+@(a.b)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (unary_expression
+    argument: (identifier))
+  (unary_expression
+    argument: (identifier))
+  (unary_expression
+    argument: (identifier))
+  (unary_expression
+    argument: (dot_expression
+      left: (identifier)
+      right: (identifier)))
+  (dot_expression
+    left: (unary_expression
+      argument: (identifier))
+    right: (identifier))
+  (unary_expression
+    argument: (parenthesized_expression
+      (dot_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+Binary expressions
+================================================================================
+
+1 + 100
+
+1 * 100 - 10 / 2
+
+abc %*% bcd
+
+1 ^/ 2 ^/ 3
+
+a => b + c
+
+a = c / d
+
+z ==> xyz + def => cd
+
+$a + b
+
+1 ∙ 2 and 3 ∙ 1 or false
+
+(1 + 2) * (2 + 3)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (binary_expression
+    left: (integer_literal)
+    right: (integer_literal))
+  (binary_expression
+    left: (binary_expression
+      left: (integer_literal)
+      right: (integer_literal))
+    right: (binary_expression
+      left: (integer_literal)
+      right: (integer_literal)))
+  (binary_expression
+    left: (identifier)
+    right: (identifier))
+  (binary_expression
+    left: (integer_literal)
+    right: (binary_expression
+      left: (integer_literal)
+      right: (integer_literal)))
+  (binary_expression
+    left: (identifier)
+    right: (binary_expression
+      left: (identifier)
+      right: (identifier)))
+  (binary_expression
+    left: (identifier)
+    right: (binary_expression
+      left: (identifier)
+      right: (identifier)))
+  (binary_expression
+    left: (binary_expression
+      left: (identifier)
+      right: (binary_expression
+        left: (identifier)
+        right: (identifier)))
+    right: (identifier))
+  (binary_expression
+    left: (unary_expression
+      argument: (identifier))
+    right: (identifier))
+  (binary_expression
+    left: (binary_expression
+      left: (binary_expression
+        left: (integer_literal)
+        right: (integer_literal))
+      right: (binary_expression
+        left: (integer_literal)
+        right: (integer_literal)))
+    right: (boolean_literal))
+  (binary_expression
+    left: (parenthesized_expression
+      (binary_expression
+        left: (integer_literal)
+        right: (integer_literal)))
+    right: (parenthesized_expression
+      (binary_expression
+        left: (integer_literal)
+        right: (integer_literal)))))
+
+================================================================================
+Dot expressions
+================================================================================
+
+a.?b.c
+
+a.b .. c.d
+
+$a.b
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (dot_expression
+    left: (dot_expression
+      left: (identifier)
+      right: (identifier))
+    right: (identifier))
+  (binary_expression
+    left: (dot_expression
+      left: (identifier)
+      right: (identifier))
+    right: (dot_expression
+      left: (identifier)
+      right: (identifier)))
+  (unary_expression
+    argument: (dot_expression
+      left: (identifier)
+      right: (identifier))))
+
+================================================================================
+Bracket expressions
+================================================================================
+
+a.b[c]
+
+1 + a[x]
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (bracket_expression
+    left: (dot_expression
+      left: (identifier)
+      right: (identifier))
+    right: (identifier))
+  (binary_expression
+    left: (integer_literal)
+    right: (bracket_expression
+      left: (identifier)
+      right: (identifier))))
+
+================================================================================
+Curly expressions
+================================================================================
+
+a.b{c}
+
+a + 2{c}[a]
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (curly_expression
+    left: (dot_expression
+      left: (identifier)
+      right: (identifier))
+    right: (identifier))
+  (binary_expression
+    left: (identifier)
+    right: (bracket_expression
+      left: (curly_expression
+        left: (integer_literal)
+        right: (identifier))
+      right: (identifier))))
+
+================================================================================
 Parenthesized calls
-===================
+================================================================================
 
 echo(foo)
 echo(1, foo, 3'f)
@@ -23,7 +249,7 @@ foo()
 
 bar()
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (call
@@ -64,9 +290,9 @@ bar()
     function: (identifier)
     arguments: (argument_list)))
 
-=============
+================================================================================
 Command calls
-=============
+================================================================================
 
 echo optarg 1, " ", singlearg 2
 
@@ -74,7 +300,7 @@ foo x,
     y, "string",
     w(call(some other))
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (call
@@ -106,9 +332,9 @@ foo x,
                 arguments: (argument_list
                   (identifier))))))))))
 
-================
+================================================================================
 Block statements
-================
+================================================================================
 
 block: 10u32
 
@@ -122,7 +348,7 @@ block:
 let y = block:
   100
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (block
@@ -156,9 +382,9 @@ let y = block:
         body: (statement_list
           (integer_literal))))))
 
-=============
+================================================================================
 If statements
-=============
+================================================================================
 
 if true:
   echo foo
@@ -192,7 +418,7 @@ block:
 if true: expr1
 else: expr2
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (if
@@ -261,9 +487,9 @@ else: expr2
       body: (statement_list
         (identifier)))))
 
-===============
+================================================================================
 When statements
-===============
+================================================================================
 
 when true:
   echo foo
@@ -298,7 +524,7 @@ block:
 when true: expr1
 else: expr2
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (when
@@ -370,9 +596,9 @@ else: expr2
       body: (statement_list
         (identifier)))))
 
-===============
+================================================================================
 Case statements
-===============
+================================================================================
 
 case x
 of 1, 2,
@@ -409,7 +635,7 @@ let x = case something(10)
   else:
     this
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (case
@@ -494,9 +720,9 @@ let x = case something(10)
           body: (statement_list
             (identifier)))))))
 
-==============
+================================================================================
 Try statements
-==============
+================================================================================
 
 try:
   echo "x"
@@ -517,7 +743,7 @@ finally:
 try: echo x
 except: echo y
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (try
