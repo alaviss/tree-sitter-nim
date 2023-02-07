@@ -36,6 +36,7 @@ enum TokenType {
   BINOP0,
   END_TOKEN_TYPE
 };
+
 static constexpr auto START_TOKEN_TYPE = COMMENT;
 
 using ValidSymbols = std::bitset<END_TOKEN_TYPE>;
@@ -53,7 +54,8 @@ public:
   /// NULL.
   /// @param validsyms - The array of valid symbols provide by tree-sitter. Must
   /// not be NULL.
-  Context(TSLexer *lexer, const bool *validsyms) : lexer(lexer) {
+  Context(TSLexer* lexer, const bool* validsyms) : lexer(lexer)
+  {
     for (int i = START_TOKEN_TYPE; i < END_TOKEN_TYPE; i++) {
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
       valid_symbols.set(i, validsyms[i]);
@@ -64,11 +66,13 @@ public:
 
   /// Returns whether the given token type is a valid token at this parsing
   /// state.
-  [[nodiscard]] auto valid(enum TokenType type) const -> bool {
+  [[nodiscard]] auto valid(enum TokenType type) const -> bool
+  {
     return valid_symbols[type];
   }
 
-  [[nodiscard]] auto valid(ValidSymbols sym) const -> bool {
+  [[nodiscard]] auto valid(ValidSymbols sym) const -> bool
+  {
     return (valid_symbols & sym).any();
   }
 
@@ -86,7 +90,8 @@ public:
   /// @param skip - Whether to skip the token from the scanned range. Useful for
   /// spaces.
   /// @returns The next lookahead character.
-  auto advance(bool skip = false) -> int32_t {
+  auto advance(bool skip = false) -> int32_t
+  {
     state_ += static_cast<int>(eof());
     lexer->advance(lexer, skip);
     return lookahead();
@@ -109,51 +114,52 @@ public:
   ///
   /// @param skip - See {@link advance}.
   /// @returns The next lookahead character.
-  auto consume(bool skip = false) -> int32_t {
+  auto consume(bool skip = false) -> int32_t
+  {
     const auto result = advance(skip);
     mark_end();
     return result;
   }
 
   /// Set the result symbol type and returns true.
-  [[nodiscard]] auto finish(enum TokenType type) -> bool {
+  [[nodiscard]] auto finish(enum TokenType type) -> bool
+  {
     lexer->result_symbol = type;
     return true;
   }
 
 private:
-  TSLexer *lexer;
+  TSLexer* lexer;
   uint32_t state_{};
   ValidSymbols valid_symbols;
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRY_LEX(ctx, fn)                                                       \
-  {                                                                            \
-    const auto tempState = (ctx).state();                                      \
-    if (fn((ctx))) {                                                           \
-      return true;                                                             \
-    }                                                                          \
-    if ((ctx).state() != tempState)                                            \
-      return false;                                                            \
+#define TRY_LEX(ctx, fn)                          \
+  {                                               \
+    const auto tempState = (ctx).state();         \
+    if (fn((ctx))) {                              \
+      return true;                                \
+    }                                             \
+    if ((ctx).state() != tempState) return false; \
   }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRY_LEXN(ctx, fn, ...)                                                 \
-  {                                                                            \
-    const auto tempState = (ctx).state();                                      \
-    if (fn((ctx), __VA_ARGS__)) {                                              \
-      return true;                                                             \
-    }                                                                          \
-    if ((ctx).state() != tempState)                                            \
-      return false;                                                            \
+#define TRY_LEXN(ctx, fn, ...)                    \
+  {                                               \
+    const auto tempState = (ctx).state();         \
+    if (fn((ctx), __VA_ARGS__)) {                 \
+      return true;                                \
+    }                                             \
+    if ((ctx).state() != tempState) return false; \
   }
 
 /// Handle parsing LONG_STRING_QUOTE.
 ///
 /// Will not advance the lexer if the token is not valid at the current
 /// position.
-static auto lex_long_string_quote(Context &ctx) -> bool {
+static auto lex_long_string_quote(Context& ctx) -> bool
+{
   if (ctx.valid(LONG_STRING_QUOTE) && ctx.lookahead() == '"') {
     ctx.consume();
     uint8_t quotes = 1;
@@ -175,17 +181,21 @@ static auto lex_long_string_quote(Context &ctx) -> bool {
   return false;
 }
 
-template <typename T, typename U, size_t N>
-static constexpr auto has_item(const std::array<T, N> &array, U item,
-                               size_t start = 0, size_t end = N) -> bool {
+template<typename T, typename U, size_t N>
+static constexpr auto has_item(
+    const std::array<T, N>& array, U item, size_t start = 0, size_t end = N)
+    -> bool
+{
   const auto last = array.begin() + end;
-  return std::find_if(array.begin() + start, last,
-                      [=](T value) -> bool { return value == item; }) != last;
+  return std::find_if(array.begin() + start, last, [=](T value) -> bool {
+           return value == item;
+         }) != last;
 }
 
-template <typename T, typename U, typename I, size_t N>
-static constexpr auto has_item(const std::array<T, N> &array, U item,
-                               std::array<I, 2> range) -> bool {
+template<typename T, typename U, typename I, size_t N>
+static constexpr auto has_item(
+    const std::array<T, N>& array, U item, std::array<I, 2> range) -> bool
+{
   return has_item(array, item, range[0], range[1]);
 }
 
@@ -222,7 +232,8 @@ static constexpr std::array<uint16_t, 21> OP_UNICHARS = {
 static constexpr std::array<uint8_t, 2> OP_UNIMUL = {0, 13};
 static constexpr std::array<uint8_t, 2> OP_UNIADD = {13, 21};
 
-static auto classify_op(Context &ctx) -> TokenType {
+static auto classify_op(Context& ctx) -> TokenType
+{
   if (has_item(OP_CHARS, ctx.lookahead(), OP10L)) {
     return BINOP10_LEFT;
   };
@@ -252,7 +263,8 @@ static auto classify_op(Context &ctx) -> TokenType {
   return END_TOKEN_TYPE;
 }
 
-static auto lex_ops(Context &ctx, bool immediate) -> bool {
+static auto lex_ops(Context& ctx, bool immediate) -> bool
+{
   if (!ctx.valid(BINOPS)) {
     return false;
   }
@@ -289,7 +301,8 @@ static auto lex_ops(Context &ctx, bool immediate) -> bool {
         last_item_kind = LAST_ARROW;
         ctx.consume();
         length += 2;
-      } else {
+      }
+      else {
         length++;
       }
       break;
@@ -346,7 +359,8 @@ static auto lex_ops(Context &ctx, bool immediate) -> bool {
 
 /// Handle lexing tasks that has to be done before any whitespace skipping
 /// happens.
-static auto lex_immediate(Context &ctx) -> bool {
+static auto lex_immediate(Context& ctx) -> bool
+{
   TRY_LEX(ctx, lex_long_string_quote);
   TRY_LEXN(ctx, lex_ops, true);
   return false;
@@ -356,7 +370,8 @@ static auto lex_immediate(Context &ctx) -> bool {
 /// lookahead.
 ///
 /// Will not advance the lexer if the tokens did not match.
-static auto lex_simple(Context &ctx) -> bool {
+static auto lex_simple(Context& ctx) -> bool
+{
   if (ctx.valid(TERMINATOR) &&
       (ctx.eof() || ctx.lookahead() == '\n' || ctx.lookahead() == '\r')) {
     ctx.consume();
@@ -369,7 +384,8 @@ static auto lex_simple(Context &ctx) -> bool {
 /// Fetch the current line as a comment.
 ///
 /// When finished, will set the symbol to COMMENT and returns true.
-static auto get_comment_line(Context &ctx) -> bool {
+static auto get_comment_line(Context& ctx) -> bool
+{
   while (!ctx.eof() && (ctx.lookahead() != '\n' || ctx.lookahead() != '\r')) {
     ctx.consume();
   }
@@ -391,7 +407,8 @@ enum CommentMarkerType {
 ///
 /// Classify what type of comment does the marker is used to start and consumes
 /// it.
-static auto get_comment_start(Context &ctx) -> CommentMarkerType {
+static auto get_comment_start(Context& ctx) -> CommentMarkerType
+{
   if (ctx.lookahead() != '#') {
     return CMT_INVALID;
   }
@@ -401,7 +418,8 @@ static auto get_comment_start(Context &ctx) -> CommentMarkerType {
     if (ctx.consume() == '[') {
       ctx.consume();
       return CMT_DOC_LONG;
-    } else {
+    }
+    else {
       return CMT_SHORT;
     }
   case '[':
@@ -415,7 +433,8 @@ static auto get_comment_start(Context &ctx) -> CommentMarkerType {
 /// Assuming the next character is `]`. Returns whether the next few characters
 /// marks the end of the given comment type. Characters are consumed whether or
 /// not they actually ends the comment.
-static auto get_comment_end(Context &ctx, CommentMarkerType type) -> bool {
+static auto get_comment_end(Context& ctx, CommentMarkerType type) -> bool
+{
   if (type == CMT_SHORT || type == CMT_INVALID) {
     return false;
   }
@@ -439,7 +458,8 @@ static auto get_comment_end(Context &ctx, CommentMarkerType type) -> bool {
 }
 
 /// Handle Nim's long and short comments.
-static auto lex_comment(Context &ctx) -> bool {
+static auto lex_comment(Context& ctx) -> bool
+{
   if (ctx.valid(COMMENT) && ctx.lookahead() == '#') {
     std::vector<bool> comment_stack;
     switch (get_comment_start(ctx)) {
@@ -494,28 +514,37 @@ static auto lex_comment(Context &ctx) -> bool {
 }
 
 /// Skip whitespaces.
-static void skip(Context &ctx) {
+static void skip(Context& ctx)
+{
   while (ctx.lookahead() == ' ') {
     ctx.advance(true);
   }
 }
 
 extern "C" {
-auto tree_sitter_nim_external_scanner_create() noexcept -> void * {
+auto tree_sitter_nim_external_scanner_create() noexcept -> void*
+{
   return nullptr;
 }
-void tree_sitter_nim_external_scanner_destroy(void *payload) noexcept {}
-auto tree_sitter_nim_external_scanner_serialize(void * /*payload*/,
-                                                char * /*buffer*/) noexcept
-    -> unsigned {
+
+void tree_sitter_nim_external_scanner_destroy(void* payload) noexcept {}
+
+auto tree_sitter_nim_external_scanner_serialize(
+    void* /*payload*/, char* /*buffer*/
+    ) noexcept -> unsigned
+{
   return 0;
 }
-void tree_sitter_nim_external_scanner_deserialize(void *payload,
-                                                  const char *buffer,
-                                                  unsigned length) noexcept {}
-auto tree_sitter_nim_external_scanner_scan(void * /*payload*/, TSLexer *lexer,
-                                           const bool *valid_symbols) noexcept
-    -> bool {
+
+void tree_sitter_nim_external_scanner_deserialize(
+    void* payload, const char* buffer, unsigned length) noexcept
+{
+}
+
+auto tree_sitter_nim_external_scanner_scan(
+    void* /*payload*/, TSLexer* lexer, const bool* valid_symbols) noexcept
+    -> bool
+{
   auto ctx = Context(lexer, valid_symbols);
 
   TRY_LEX(ctx, lex_immediate);

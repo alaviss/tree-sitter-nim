@@ -1,3 +1,0 @@
----
-Checks: "*,-abseil-*,-altera-*,-darwin-*,-fuchsia-*,fuchsia-multiple-inheritance,fuchsia-statically-constructed-objects,-llvmlibc-*,-objc-*,-zircon-*"
-# vim: set ft=yaml et:
