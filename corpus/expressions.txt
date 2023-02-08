@@ -94,6 +94,8 @@ $a + b
 
 (1 + 2) * (2 + 3)
 
+a += c >= b
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -153,7 +155,12 @@ $a + b
     right: (parenthesized_expression
       (binary_expression
         left: (integer_literal)
-        right: (integer_literal)))))
+        right: (integer_literal))))
+  (binary_expression
+    left: (identifier)
+    right: (binary_expression
+      left: (identifier)
+      right: (identifier))))
 
 ================================================================================
 Dot expressions

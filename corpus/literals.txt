@@ -154,7 +154,14 @@ Tuple literals
     (integer_literal)
     (float_literal))
   (tuple
-    (integer_literal)))
+    (integer_literal))
+  (tuple
+    (binary_expression
+      (identifier)
+      (integer_literal))
+    (binary_expression
+      (integer_literal)
+      (integer_literal))))
 
 ================================================================================
 String literals
