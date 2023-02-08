@@ -224,6 +224,7 @@ module.exports = grammar({
         seq(
           field("left", $._expression),
           field("operator", op),
+          / +/,
           field("right", $._expression)
         );
 
@@ -408,6 +409,7 @@ module.exports = grammar({
 
     accent_quoted: $ =>
       seq("`", repeat1(alias(/[^\x00-\x1f\r\n\t` ]+/, $.identifier)), "`"),
+
     _identifier_imm: $ => alias(token.immediate(Identifier), $.identifier),
     identifier: _ => token(Identifier),
   },

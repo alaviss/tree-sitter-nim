@@ -3,19 +3,22 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-#include <algorithm>
-#include <array>
-#include <bitset>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <exception>
-#include <iostream>
-#include <stdexcept>
-#include <vector>
+#include "scanner2.cc"
 
-#include "tree_sitter/parser.h"
+#if 0
+#  include <algorithm>
+#  include <array>
+#  include <bitset>
+#  include <cmath>
+#  include <cstddef>
+#  include <cstdint>
+#  include <cstdlib>
+#  include <exception>
+#  include <iostream>
+#  include <stdexcept>
+#  include <vector>
+
+#  include "tree_sitter/parser.h"
 
 /// Token types understood by the parser. Keep up-to-date with grammar.js
 enum TokenType {
@@ -135,24 +138,24 @@ private:
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRY_LEX(ctx, fn)                          \
-  {                                               \
-    const auto tempState = (ctx).state();         \
-    if (fn((ctx))) {                              \
-      return true;                                \
-    }                                             \
-    if ((ctx).state() != tempState) return false; \
-  }
+#  define TRY_LEX(ctx, fn)                          \
+    {                                               \
+      const auto tempState = (ctx).state();         \
+      if (fn((ctx))) {                              \
+        return true;                                \
+      }                                             \
+      if ((ctx).state() != tempState) return false; \
+    }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRY_LEXN(ctx, fn, ...)                    \
-  {                                               \
-    const auto tempState = (ctx).state();         \
-    if (fn((ctx), __VA_ARGS__)) {                 \
-      return true;                                \
-    }                                             \
-    if ((ctx).state() != tempState) return false; \
-  }
+#  define TRY_LEXN(ctx, fn, ...)                    \
+    {                                               \
+      const auto tempState = (ctx).state();         \
+      if (fn((ctx), __VA_ARGS__)) {                 \
+        return true;                                \
+      }                                             \
+      if ((ctx).state() != tempState) return false; \
+    }
 
 /// Handle parsing LONG_STRING_QUOTE.
 ///
@@ -558,3 +561,4 @@ auto tree_sitter_nim_external_scanner_scan(
   return false;
 }
 }
+#endif

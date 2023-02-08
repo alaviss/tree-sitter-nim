@@ -2226,6 +2226,10 @@
                 }
               },
               {
+                "type": "PATTERN",
+                "value": " +"
+              },
+              {
                 "type": "FIELD",
                 "name": "right",
                 "content": {
@@ -2257,6 +2261,10 @@
                   "type": "SYMBOL",
                   "name": "_binop9"
                 }
+              },
+              {
+                "type": "PATTERN",
+                "value": " +"
               },
               {
                 "type": "FIELD",
@@ -2544,6 +2552,10 @@
                 }
               },
               {
+                "type": "PATTERN",
+                "value": " +"
+              },
+              {
                 "type": "FIELD",
                 "name": "right",
                 "content": {
@@ -2575,6 +2587,10 @@
                   "type": "SYMBOL",
                   "name": "_binop8"
                 }
+              },
+              {
+                "type": "PATTERN",
+                "value": " +"
               },
               {
                 "type": "FIELD",
@@ -2610,6 +2626,10 @@
                 }
               },
               {
+                "type": "PATTERN",
+                "value": " +"
+              },
+              {
                 "type": "FIELD",
                 "name": "right",
                 "content": {
@@ -2643,6 +2663,10 @@
                 }
               },
               {
+                "type": "PATTERN",
+                "value": " +"
+              },
+              {
                 "type": "FIELD",
                 "name": "right",
                 "content": {
@@ -2674,6 +2698,10 @@
                   "type": "SYMBOL",
                   "name": "_binop5"
                 }
+              },
+              {
+                "type": "PATTERN",
+                "value": " +"
               },
               {
                 "type": "FIELD",
@@ -3234,6 +3262,10 @@
                 }
               },
               {
+                "type": "PATTERN",
+                "value": " +"
+              },
+              {
                 "type": "FIELD",
                 "name": "right",
                 "content": {
@@ -3323,6 +3355,10 @@
                     ]
                   }
                 }
+              },
+              {
+                "type": "PATTERN",
+                "value": " +"
               },
               {
                 "type": "FIELD",
@@ -3461,6 +3497,10 @@
                 }
               },
               {
+                "type": "PATTERN",
+                "value": " +"
+              },
+              {
                 "type": "FIELD",
                 "name": "right",
                 "content": {
@@ -3492,6 +3532,10 @@
                   "type": "SYMBOL",
                   "name": "_binop2"
                 }
+              },
+              {
+                "type": "PATTERN",
+                "value": " +"
               },
               {
                 "type": "FIELD",
@@ -3527,6 +3571,10 @@
                 }
               },
               {
+                "type": "PATTERN",
+                "value": " +"
+              },
+              {
                 "type": "FIELD",
                 "name": "right",
                 "content": {
@@ -3560,6 +3608,10 @@
                 }
               },
               {
+                "type": "PATTERN",
+                "value": " +"
+              },
+              {
                 "type": "FIELD",
                 "name": "right",
                 "content": {
@@ -3591,6 +3643,10 @@
                   "type": "SYMBOL",
                   "name": "_binop10r"
                 }
+              },
+              {
+                "type": "PATTERN",
+                "value": " +"
               },
               {
                 "type": "FIELD",

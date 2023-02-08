@@ -2,6 +2,7 @@
 CompileFlags:
   Add: 
     - -Wall
+    - -Wimplicit-fallthrough
     - -std=c++14
     - -fno-exceptions
 
