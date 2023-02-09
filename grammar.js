@@ -105,7 +105,7 @@ module.exports = grammar({
     $._binop0,
   ],
   extras: $ => [/[\n\r ]+/, $.comment],
-  inline: $ => [$._maybe_colon_expression],
+  inline: $ => [$._maybe_colon_expression, $._maybe_equal_expression],
 
   rules: {
     source_file: $ => repeat(seq($._expression, $._terminator)),
@@ -124,12 +124,16 @@ module.exports = grammar({
         $.identifier
       ),
 
+    argument_list: $ =>
+      sep1(choice($._maybe_colon_expression, $._maybe_equal_expression), ","),
+
     colon_expression: $ =>
       seq(field("left", $._expression), ":", field("right", $._expression)),
     equal_expression: $ =>
       seq(field("left", $._expression), "=", field("right", $._expression)),
 
     _maybe_colon_expression: $ => choice($._expression, $.colon_expression),
+    _maybe_equal_expression: $ => choice($._expression, $.colon_expression),
 
     tuple: $ =>
       choice(
@@ -156,7 +160,7 @@ module.exports = grammar({
         seq(
           field("left", $._expression),
           "[",
-          field("right", $._expression),
+          field("right", $.argument_list),
           "]"
         )
       ),
@@ -167,7 +171,7 @@ module.exports = grammar({
         seq(
           field("left", $._expression),
           "{",
-          field("right", $._expression),
+          field("right", $.argument_list),
           "}"
         )
       ),

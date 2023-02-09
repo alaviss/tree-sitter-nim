@@ -207,12 +207,14 @@ a.b[c]
     left: (dot_expression
       left: (identifier)
       right: (identifier))
-    right: (identifier))
+    right: (argument_list
+      (identifier)))
   (binary_expression
     left: (integer_literal)
     right: (bracket_expression
       left: (identifier)
-      right: (identifier))))
+      right: (argument_list
+        (identifier)))))
 
 ================================================================================
 Curly expressions
@@ -229,14 +231,17 @@ a + 2{c}[a]
     left: (dot_expression
       left: (identifier)
       right: (identifier))
-    right: (identifier))
+    right: (argument_list
+      (identifier)))
   (binary_expression
     left: (identifier)
     right: (bracket_expression
       left: (curly_expression
         left: (integer_literal)
-        right: (identifier))
-      right: (identifier))))
+        right: (argument_list
+          (identifier)))
+      right: (argument_list
+        (identifier)))))
 
 ================================================================================
 Parenthesized calls

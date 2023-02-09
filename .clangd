@@ -23,13 +23,14 @@ Diagnostics:
     Remove: modernize-use-trailing-return-type
     CheckOptions: 
       readability-identifier-naming.ClassCase: CamelCase
+      readability-identifier-naming.ClassMemberSuffix: _
       readability-identifier-naming.ConstantCase: CamelCase
       readability-identifier-naming.LocalConstantCase: lower_case
       readability-identifier-naming.EnumConstantCase: CamelCase
       readability-identifier-naming.FunctionCase: lower_case
       readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
-      readability-identifier-naming.MemberSuffix: _
       readability-identifier-naming.VariableCase: lower_case
+      misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
   UnusedIncludes: Strict
     
 # vim: set ft=yaml et:

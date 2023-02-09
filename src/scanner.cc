@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <limits>
 #include <utility>
+#include <vector>
 
 #include "tree_sitter/parser.h"
 
@@ -20,6 +21,9 @@ enum class TokenType : TSSymbol {
   TokenTypeStart,
   Comment = TokenTypeStart,
   LongStringQuote,
+  LayoutStart,
+  LayoutEnd,
+  InvalidLayout,
   Terminator,
   Colon,
   Equal,
@@ -48,6 +52,45 @@ constexpr ValidSymbols make_valid_symbols(initializer_list<TokenType> syms)
   return result;
 }
 
+struct State {
+  vector<uint8_t> layout_stack;
+  uint8_t end_backlog;
+
+  unsigned serialize(uint8_t* buffer)
+  {
+    // Since spans doesn't exist before C++20, we have to do pointer math here.
+    // NOLINTBEGIN(*-pointer-arithmetic)
+    unsigned length = 0;
+    constexpr unsigned max_length = TREE_SITTER_SERIALIZATION_BUFFER_SIZE;
+    buffer[length++] = end_backlog;
+    for (const auto indent : layout_stack) {
+      // Terrible failure mode, but there isn't much to do here.
+      if (length >= max_length) {
+        break;
+      }
+      buffer[length++] = indent;
+    }
+    return length;
+    // NOLINTEND(*-pointer-arithmetic)
+  }
+
+  void deserialize(const uint8_t* buffer, unsigned length)
+  {
+    // NOLINTBEGIN(*-pointer-arithmetic)
+    if (length == 0) {
+      return;
+    }
+
+    unsigned cursor = 0;
+    end_backlog = buffer[cursor++];
+    layout_stack.resize(length - cursor);
+    for (unsigned i = 0; i < length - cursor; i++) {
+      layout_stack.at(i) = buffer[cursor++];
+    }
+    // NOLINTEND(*-pointer-arithmetic)
+  }
+};
+
 /// Context for a scanning session.
 ///
 /// This class manages the lexing context and abstracts over TSLexer.
@@ -59,7 +102,8 @@ public:
   /// NULL.
   /// @param validsyms - The array of valid symbols provide by tree-sitter. Must
   /// not be NULL.
-  Context(TSLexer* lexer, const bool* validsyms) : lexer_(lexer)
+  Context(TSLexer* lexer, State* state, const bool* validsyms) :
+      lexer_(lexer), state_(state)
   {
     for (auto i = (int)TokenType::TokenTypeStart;
          i < (int)TokenType::TokenTypeLen; i++) {
@@ -107,15 +151,15 @@ public:
   /// @returns The next lookahead character.
   char32_t advance(bool skip = false)
   {
-    state_ += (int)eof();
+    counter_ += (int)eof();
     lexer_->advance(lexer_, skip);
     return lookahead();
   }
 
-  /// Returns the currently tracked state.
+  /// Returns the advance counter.
   ///
-  /// This state changes every time the lexer is advanced.
-  uint32_t state() const { return state_; }
+  /// This count changes every time the lexer is advanced.
+  uint32_t counter() const { return counter_; }
 
   /// Returns whether we are at EOF.
   bool eof() const { return lexer_->eof(lexer_); }
@@ -143,9 +187,13 @@ public:
     return true;
   }
 
+  /// Access the persistent state.
+  State& state() { return *state_; }
+
 private:
   TSLexer* lexer_;
-  uint32_t state_{};
+  State* state_;
+  uint32_t counter_{};
   ValidSymbols valid_{};
 };
 
@@ -160,25 +208,25 @@ private:
 /// @param ctx - The context to monitor state with, and as input to `fn`.
 /// @param fn - The lexing function
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRY_LEX(ctx, fn)                           \
-  do {                                             \
-    const auto last_state = (ctx).state();         \
-    if (fn((ctx))) {                               \
-      return true;                                 \
-    }                                              \
-    if ((ctx).state() != last_state) return false; \
+#define TRY_LEX(ctx, fn)                             \
+  do {                                               \
+    const auto last_count = (ctx).counter();         \
+    if (fn((ctx))) {                                 \
+      return true;                                   \
+    }                                                \
+    if ((ctx).counter() != last_count) return false; \
   } while (false)
 
 /// Same as {@link TRY_LEX}, but allows passing extra arguments to the lexing
 /// function.
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRY_LEXN(ctx, fn, ...)                     \
-  do {                                             \
-    const auto last_state = (ctx).state();         \
-    if (fn((ctx), __VA_ARGS__)) {                  \
-      return true;                                 \
-    }                                              \
-    if ((ctx).state() != last_state) return false; \
+#define TRY_LEXN(ctx, fn, ...)                       \
+  do {                                               \
+    const auto last_count = (ctx).counter();         \
+    if (fn((ctx), __VA_ARGS__)) {                    \
+      return true;                                   \
+    }                                                \
+    if ((ctx).counter() != last_count) return false; \
   } while (false)
 
 namespace binary_op {
@@ -575,7 +623,7 @@ bool lex(Context& ctx)
 
   uint32_t nesting = 0;
   while (!ctx.eof()) {
-    const auto last_state = ctx.state();
+    const auto last_state = ctx.counter();
 
     switch (start_marker(ctx)) {
     case Marker::BlockComment:
@@ -594,7 +642,7 @@ bool lex(Context& ctx)
       nesting--;
     }
 
-    if (last_state == ctx.state()) {
+    if (last_state == ctx.counter()) {
       ctx.consume();
     }
   }
@@ -605,25 +653,36 @@ bool lex(Context& ctx)
 }  // namespace
 
 extern "C" {
-void* tree_sitter_nim_external_scanner_create() noexcept { return nullptr; }
+void* tree_sitter_nim_external_scanner_create() noexcept { return new State{}; }
 
-void tree_sitter_nim_external_scanner_destroy(void* payload) noexcept {}
+void tree_sitter_nim_external_scanner_destroy(void* payload) noexcept
+{
+  auto* state = static_cast<State*>(payload);
+  // We own this and the code does not do anything to justify pulling
+  // unique_ptr in.
+  //
+  // NOLINTNEXTLINE(*-owning-memory)
+  delete state;
+}
 
 unsigned tree_sitter_nim_external_scanner_serialize(
-    void* /*payload*/, char* /*buffer*/) noexcept
+    void* payload, uint8_t* buffer) noexcept
 {
-  return 0;
+  auto* state = static_cast<State*>(payload);
+  return state->serialize(buffer);
 }
 
 void tree_sitter_nim_external_scanner_deserialize(
-    void* /*payload*/, const char* /*buffer*/, unsigned /*length*/) noexcept
+    void* payload, const uint8_t* buffer, unsigned length) noexcept
 {
+  auto* state = static_cast<State*>(payload);
+  state->deserialize(buffer, length);
 }
 
 bool tree_sitter_nim_external_scanner_scan(
-    void* /*payload*/, TSLexer* lexer, const bool* valid_symbols) noexcept
+    void* payload, TSLexer* lexer, const bool* valid_symbols) noexcept
 {
-  Context ctx{lexer, valid_symbols};
+  Context ctx{lexer, static_cast<State*>(payload), valid_symbols};
   TRY_LEX(ctx, lex_long_string_quote);
   TRY_LEXN(ctx, binary_op::lex, true);
 

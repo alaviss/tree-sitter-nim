@@ -63,6 +63,49 @@
         }
       ]
     },
+    "argument_list": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_maybe_colon_expression"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_maybe_equal_expression"
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_maybe_colon_expression"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_maybe_equal_expression"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
     "colon_expression": {
       "type": "SEQ",
       "members": [
@@ -114,6 +157,19 @@
       ]
     },
     "_maybe_colon_expression": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "colon_expression"
+        }
+      ]
+    },
+    "_maybe_equal_expression": {
       "type": "CHOICE",
       "members": [
         {
@@ -258,7 +314,7 @@
             "name": "right",
             "content": {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "argument_list"
             }
           },
           {
@@ -291,7 +347,7 @@
             "name": "right",
             "content": {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "argument_list"
             }
           },
           {
@@ -5110,7 +5166,8 @@
     }
   ],
   "inline": [
-    "_maybe_colon_expression"
+    "_maybe_colon_expression",
+    "_maybe_equal_expression"
   ],
   "supertypes": []
 }
