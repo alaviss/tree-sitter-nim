@@ -22,6 +22,8 @@ Diagnostics:
     - readability-*
     Remove: modernize-use-trailing-return-type
     CheckOptions: 
+      readability-function-cognitive-complexity.IgnoreMacros: true
+      readability-implicit-bool-conversion.AllowPointerConditions: true
       readability-identifier-naming.ClassCase: CamelCase
       readability-identifier-naming.ClassMemberSuffix: _
       readability-identifier-naming.ConstantCase: CamelCase

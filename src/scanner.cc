@@ -11,11 +11,18 @@
 #include <utility>
 #include <vector>
 
+#ifdef TREE_SITTER_INTERNAL_BUILD
+#  include <iostream>
+#endif
+
 #include "tree_sitter/parser.h"
 
 namespace {
 
 using namespace std;
+
+using IndentCount = uint8_t;
+constexpr auto InvalidIndent = numeric_limits<IndentCount>::max();
 
 enum class TokenType : TSSymbol {
   TokenTypeStart,
@@ -54,7 +61,7 @@ constexpr ValidSymbols make_valid_symbols(initializer_list<TokenType> syms)
 
 struct State {
   vector<uint8_t> layout_stack;
-  uint8_t end_backlog;
+  uint8_t line_indent;
 
   unsigned serialize(uint8_t* buffer)
   {
@@ -62,7 +69,7 @@ struct State {
     // NOLINTBEGIN(*-pointer-arithmetic)
     unsigned length = 0;
     constexpr unsigned max_length = TREE_SITTER_SERIALIZATION_BUFFER_SIZE;
-    buffer[length++] = end_backlog;
+    buffer[length++] = line_indent;
     for (const auto indent : layout_stack) {
       // Terrible failure mode, but there isn't much to do here.
       if (length >= max_length) {
@@ -77,12 +84,15 @@ struct State {
   void deserialize(const uint8_t* buffer, unsigned length)
   {
     // NOLINTBEGIN(*-pointer-arithmetic)
+    line_indent = 0;
+    layout_stack.clear();
+
     if (length == 0) {
       return;
     }
 
     unsigned cursor = 0;
-    end_backlog = buffer[cursor++];
+    line_indent = buffer[cursor++];
     layout_stack.resize(length - cursor);
     for (unsigned i = 0; i < length - cursor; i++) {
       layout_stack.at(i) = buffer[cursor++];
@@ -490,59 +500,6 @@ bool lex(Context& ctx, bool immediate)
 
 }  // namespace binary_op
 
-bool lex_long_string_quote(Context& ctx)
-{
-  if (!ctx.valid(TokenType::LongStringQuote) || ctx.lookahead() != '"') {
-    return false;
-  }
-
-  ctx.consume();
-  uint8_t count = 1;
-  while (ctx.lookahead() == '"' && count < 3) {
-    ctx.advance();
-    count++;
-  }
-
-  if (count < 3 || ctx.lookahead() == '"') {
-    return ctx.finish(TokenType::LongStringQuote);
-  }
-
-  return false;
-}
-
-bool lex_space_and_terminator(Context& ctx)
-{
-  bool found = false;
-  while (true) {
-    switch (ctx.lookahead()) {
-    case ' ':
-      ctx.advance(false);
-      break;
-    case '\0':
-      if (ctx.eof()) {
-        found = true;
-        ctx.mark_end();
-      }
-      goto end;  // NOLINT(*-avoid-goto)
-      break;
-    case '\n':
-    case '\r':
-      found = true;
-      ctx.consume();
-      break;
-    default:
-      goto end;  // NOLINT(*-avoid-goto)
-    }
-  }
-
-end:
-  if (found && ctx.valid(TokenType::Terminator)) {
-    return ctx.finish(TokenType::Terminator);
-  }
-
-  return false;
-}
-
 namespace comment {
 enum class Marker { Invalid, LineComment, BlockComment, BlockDocComment };
 
@@ -650,6 +607,113 @@ bool lex(Context& ctx)
   return false;
 }
 }  // namespace comment
+
+bool lex_long_string_quote(Context& ctx)
+{
+  if (!ctx.valid(TokenType::LongStringQuote) || ctx.lookahead() != '"') {
+    return false;
+  }
+
+  ctx.consume();
+  uint8_t count = 1;
+  while (ctx.lookahead() == '"' && count < 3) {
+    ctx.advance();
+    count++;
+  }
+
+  if (count < 3 || ctx.lookahead() == '"') {
+    return ctx.finish(TokenType::LongStringQuote);
+  }
+
+  return false;
+}
+
+bool lex_indent(Context& ctx)
+{
+  if (ctx.lookahead() == '#') {
+    return false;
+  }
+
+  const auto line_indent = ctx.state().line_indent;
+
+  if (line_indent == InvalidIndent) {
+#ifdef TREE_SITTER_INTERNAL_BUILD
+    if (getenv("TREE_SITTER_DEBUG")) {
+      cerr << "nim external lexer: invalid indentation reached\n";
+    }
+#endif
+    return false;
+  }
+
+  const int32_t last_indent =
+      !ctx.state().layout_stack.empty() ? ctx.state().layout_stack.back() : -1;
+  if (ctx.valid(TokenType::LayoutStart) && last_indent < line_indent) {
+    ctx.state().layout_stack.push_back(line_indent);
+
+    return ctx.finish(TokenType::LayoutStart);
+  }
+
+  if (ctx.valid(TokenType::LayoutEnd)) {
+    if (last_indent > line_indent) {
+      ctx.state().layout_stack.pop_back();
+
+      return ctx.finish(TokenType::LayoutEnd);
+    }
+
+    if (ctx.eof()) {
+      return ctx.finish(TokenType::LayoutEnd);
+    }
+  }
+
+  if (last_indent != line_indent) {
+    return ctx.finish(TokenType::InvalidLayout);
+  }
+
+  return false;
+}
+
+bool lex_space_and_terminator(Context& ctx)
+{
+  bool found = false;
+  uint8_t indent = 0;
+  while (true) {
+    switch (ctx.lookahead()) {
+    case ' ':
+      if (found || ctx.state().layout_stack.empty()) {
+        indent += (int)(indent != InvalidIndent);
+      }
+      ctx.advance(false);
+      break;
+    case '\0':
+      if (ctx.eof()) {
+        found = true;
+        indent = 0;
+        ctx.mark_end();
+      }
+      goto end;  // NOLINT(*-avoid-goto)
+      break;
+    case '\n':
+    case '\r':
+      found = true;
+      indent = 0;
+      ctx.consume();
+      break;
+    default:
+      goto end;  // NOLINT(*-avoid-goto)
+    }
+  }
+  ctx.state().line_indent = indent;
+
+end:
+  if (found) {
+    if (ctx.valid(TokenType::Terminator)) {
+      return ctx.finish(TokenType::Terminator);
+    }
+  }
+
+  return false;
+}
+
 }  // namespace
 
 extern "C" {
@@ -691,6 +755,7 @@ bool tree_sitter_nim_external_scanner_scan(
   }
 
   TRY_LEX(ctx, comment::lex);
+  TRY_LEX(ctx, lex_indent);
   TRY_LEXN(ctx, binary_op::lex, false);
 
   return false;

@@ -90,6 +90,9 @@ module.exports = grammar({
   externals: $ => [
     $.comment,
     $._long_string_quote,
+    $._layout_start,
+    $._layout_end,
+    $._invalid_layout,
     $._terminator,
     ":",
     "=",
@@ -108,7 +111,19 @@ module.exports = grammar({
   inline: $ => [$._maybe_colon_expression, $._maybe_equal_expression],
 
   rules: {
-    source_file: $ => repeat(seq($._expression, $._terminator)),
+    source_file: $ => alias($.statement_list, ""),
+
+    statement_list: $ =>
+      choice(
+        sep1($._statement, ";"),
+        seq(
+          $._layout_start,
+          repeat1(seq($._statement, $._terminator)),
+          $._layout_end
+        )
+      ),
+
+    _statement: $ => choice($._expression),
 
     _expression: $ =>
       choice(

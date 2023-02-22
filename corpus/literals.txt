@@ -156,7 +156,7 @@ Tuple literals
   (tuple
     (integer_literal))
   (tuple
-    (binary_expression
+    (colon_expression
       (identifier)
       (integer_literal))
     (binary_expression
