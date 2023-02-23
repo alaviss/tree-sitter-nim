@@ -131,12 +131,30 @@ module.exports = grammar({
         $.accent_quoted,
         $.binary_expression,
         $.bracket_expression,
+        $.call,
         $.curly_expression,
         $.dot_expression,
         $.parenthesized_expression,
         $.tuple,
         $.unary_expression,
         $.identifier
+      ),
+
+    call: $ =>
+      prec.right(
+        choice(
+          seq(
+            field("function", $._expression),
+            choice(
+              seq(
+                token.immediate("("),
+                optional(field("arguments", $.argument_list)),
+                ")"
+              ),
+              field("arguments", $._expression)
+            )
+          )
+        )
       ),
 
     argument_list: $ =>
@@ -312,8 +330,11 @@ module.exports = grammar({
     integer_literal: $ =>
       seq(
         $._numeric_literal,
-        optional(token.immediate("'")),
-        optional(token.immediate(choice(/[uU]/, /[iIuU](8|16|32|64)/)))
+        optional(
+          token.immediate(
+            seq(optional("'"), choice(/[uU]/, /[iIuU](8|16|32|64)/))
+          )
+        )
       ),
 
     float_literal: $ => {
@@ -321,11 +342,10 @@ module.exports = grammar({
       const Apostrophe = optional(token.immediate("'"));
 
       return choice(
-        seq($._numeric_literal, Apostrophe, token.immediate(FloatSuffix)),
+        seq($._numeric_literal, token.immediate(seq(Apostrophe, FloatSuffix))),
         seq(
           $._decimal_float_literal,
-          Apostrophe,
-          optional(token.immediate(FloatSuffix))
+          optional(token.immediate(seq(Apostrophe, FloatSuffix)))
         )
       );
     },
@@ -333,8 +353,10 @@ module.exports = grammar({
     custom_numeric_literal: $ =>
       seq(
         choice($._numeric_literal, $._decimal_float_literal),
-        field("function", seq(token.immediate("'"), $._identifier_imm))
+        field("function", alias($._custom_numeric_suffix, $.identifier))
       ),
+
+    _custom_numeric_suffix: _ => token.immediate(seq("'", Identifier)),
 
     _numeric_literal: _ =>
       token(
@@ -429,7 +451,6 @@ module.exports = grammar({
     accent_quoted: $ =>
       seq("`", repeat1(alias(/[^\x00-\x1f\r\n\t` ]+/, $.identifier)), "`"),
 
-    _identifier_imm: $ => alias(token.immediate(Identifier), $.identifier),
     identifier: _ => token(Identifier),
   },
 });

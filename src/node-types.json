@@ -24,6 +24,10 @@
           "named": true
         },
         {
+          "type": "call",
+          "named": true
+        },
+        {
           "type": "char_literal",
           "named": true
         },
@@ -118,6 +122,10 @@
           "named": true
         },
         {
+          "type": "call",
+          "named": true
+        },
+        {
           "type": "char_literal",
           "named": true
         },
@@ -201,6 +209,10 @@
             "named": true
           },
           {
+            "type": "call",
+            "named": true
+          },
+          {
             "type": "char_literal",
             "named": true
           },
@@ -272,6 +284,10 @@
           },
           {
             "type": "bracket_expression",
+            "named": true
+          },
+          {
+            "type": "call",
             "named": true
           },
           {
@@ -355,6 +371,10 @@
             "named": true
           },
           {
+            "type": "call",
+            "named": true
+          },
+          {
             "type": "char_literal",
             "named": true
           },
@@ -421,6 +441,172 @@
     }
   },
   {
+    "type": "call",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "accent_quoted",
+            "named": true
+          },
+          {
+            "type": "argument_list",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "boolean_literal",
+            "named": true
+          },
+          {
+            "type": "bracket_expression",
+            "named": true
+          },
+          {
+            "type": "call",
+            "named": true
+          },
+          {
+            "type": "char_literal",
+            "named": true
+          },
+          {
+            "type": "curly_expression",
+            "named": true
+          },
+          {
+            "type": "custom_numeric_literal",
+            "named": true
+          },
+          {
+            "type": "dot_expression",
+            "named": true
+          },
+          {
+            "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string_literal",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "integer_literal",
+            "named": true
+          },
+          {
+            "type": "nil_literal",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "accent_quoted",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "boolean_literal",
+            "named": true
+          },
+          {
+            "type": "bracket_expression",
+            "named": true
+          },
+          {
+            "type": "call",
+            "named": true
+          },
+          {
+            "type": "char_literal",
+            "named": true
+          },
+          {
+            "type": "curly_expression",
+            "named": true
+          },
+          {
+            "type": "custom_numeric_literal",
+            "named": true
+          },
+          {
+            "type": "dot_expression",
+            "named": true
+          },
+          {
+            "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string_literal",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "integer_literal",
+            "named": true
+          },
+          {
+            "type": "nil_literal",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "tuple",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "char_literal",
     "named": true,
     "fields": {},
@@ -457,6 +643,10 @@
           },
           {
             "type": "bracket_expression",
+            "named": true
+          },
+          {
+            "type": "call",
             "named": true
           },
           {
@@ -531,6 +721,10 @@
           },
           {
             "type": "bracket_expression",
+            "named": true
+          },
+          {
+            "type": "call",
             "named": true
           },
           {
@@ -614,6 +808,10 @@
             "named": true
           },
           {
+            "type": "call",
+            "named": true
+          },
+          {
             "type": "char_literal",
             "named": true
           },
@@ -684,13 +882,9 @@
     "named": true,
     "fields": {
       "function": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
-          {
-            "type": "'",
-            "named": false
-          },
           {
             "type": "identifier",
             "named": true
@@ -721,6 +915,10 @@
           },
           {
             "type": "bracket_expression",
+            "named": true
+          },
+          {
+            "type": "call",
             "named": true
           },
           {
@@ -795,6 +993,10 @@
           },
           {
             "type": "bracket_expression",
+            "named": true
+          },
+          {
+            "type": "call",
             "named": true
           },
           {
@@ -909,6 +1111,10 @@
           "named": true
         },
         {
+          "type": "call",
+          "named": true
+        },
+        {
           "type": "char_literal",
           "named": true
         },
@@ -1008,6 +1214,10 @@
           "named": true
         },
         {
+          "type": "call",
+          "named": true
+        },
+        {
           "type": "char_literal",
           "named": true
         },
@@ -1088,6 +1298,10 @@
           },
           {
             "type": "bracket_expression",
+            "named": true
+          },
+          {
+            "type": "call",
             "named": true
           },
           {

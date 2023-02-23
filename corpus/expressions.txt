@@ -296,11 +296,9 @@ bar()
         arguments: (argument_list
           (string_literal)))))
   (call
-    function: (identifier)
-    arguments: (argument_list))
+    function: (identifier))
   (call
-    function: (identifier)
-    arguments: (argument_list)))
+    function: (identifier)))
 
 ================================================================================
 Command calls
