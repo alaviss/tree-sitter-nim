@@ -8,6 +8,7 @@
 #include <bitset>
 #include <cstdint>
 #include <limits>
+#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -93,13 +94,27 @@ struct State {
 
     unsigned cursor = 0;
     line_indent = buffer[cursor++];
-    layout_stack.resize(length - cursor);
-    for (unsigned i = 0; i < length - cursor; i++) {
+    const auto stack_size = length - cursor;
+    layout_stack.resize(stack_size);
+    for (unsigned i = 0; i < stack_size; i++) {
       layout_stack.at(i) = buffer[cursor++];
     }
     // NOLINTEND(*-pointer-arithmetic)
   }
 };
+
+#ifdef TREE_SITTER_INTERNAL_BUILD
+ostream& operator<<(ostream& stream, const State& state)
+{
+  stream << "current indentation: " << (int32_t)state.line_indent;
+  stream << ", indentation stack: [ ";
+  for (const auto indent : state.layout_stack) {
+    stream << (int32_t)indent << " ";
+  }
+  stream << "]";
+  return stream;
+}
+#endif
 
 /// Context for a scanning session.
 ///
@@ -193,6 +208,11 @@ public:
   /// Set the result symbol type and returns true.
   [[nodiscard]] bool finish(enum TokenType type)
   {
+#ifdef TREE_SITTER_INTERNAL_BUILD
+    if (getenv("TREE_SITTER_DEBUG")) {
+      cerr << "lex_nim: finish state: " << *state_ << '\n';
+    }
+#endif
     lexer_->result_symbol = (TSSymbol)type;
     return true;
   }
@@ -639,7 +659,7 @@ bool lex_indent(Context& ctx)
   if (line_indent == InvalidIndent) {
 #ifdef TREE_SITTER_INTERNAL_BUILD
     if (getenv("TREE_SITTER_DEBUG")) {
-      cerr << "nim external lexer: invalid indentation reached\n";
+      cerr << "lex_nim: invalid indentation reached\n";
     }
 #endif
     return false;
@@ -647,25 +667,28 @@ bool lex_indent(Context& ctx)
 
   const int32_t last_indent =
       !ctx.state().layout_stack.empty() ? ctx.state().layout_stack.back() : -1;
+
   if (ctx.valid(TokenType::LayoutStart) && last_indent < line_indent) {
     ctx.state().layout_stack.push_back(line_indent);
-
+    ctx.mark_end();
     return ctx.finish(TokenType::LayoutStart);
   }
 
   if (ctx.valid(TokenType::LayoutEnd)) {
     if (last_indent > line_indent) {
       ctx.state().layout_stack.pop_back();
-
+      ctx.mark_end();
       return ctx.finish(TokenType::LayoutEnd);
     }
 
     if (ctx.eof()) {
+      ctx.mark_end();
       return ctx.finish(TokenType::LayoutEnd);
     }
   }
 
-  if (last_indent != line_indent) {
+  if (last_indent > line_indent) {
+    ctx.mark_end();
     return ctx.finish(TokenType::InvalidLayout);
   }
 
@@ -702,10 +725,10 @@ bool lex_space_and_terminator(Context& ctx)
       goto end;  // NOLINT(*-avoid-goto)
     }
   }
-  ctx.state().line_indent = indent;
-
 end:
   if (found) {
+    ctx.state().line_indent = indent;
+
     if (ctx.valid(TokenType::Terminator)) {
       return ctx.finish(TokenType::Terminator);
     }
@@ -747,6 +770,13 @@ bool tree_sitter_nim_external_scanner_scan(
     void* payload, TSLexer* lexer, const bool* valid_symbols) noexcept
 {
   Context ctx{lexer, static_cast<State*>(payload), valid_symbols};
+
+#ifdef TREE_SITTER_INTERNAL_BUILD
+  if (getenv("TREE_SITTER_DEBUG")) {
+    cerr << "lex_nim: start state: " << ctx.state() << '\n';
+  }
+#endif
+
   TRY_LEX(ctx, lex_long_string_quote);
   TRY_LEXN(ctx, binary_op::lex, true);
 

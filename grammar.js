@@ -52,22 +52,22 @@ const OperatorChars = [
 ];
 
 const Precedence = {
-  ColonEqExpr: 15,
-  Sigil: 14,
-  Dot: 13,
-  Suffix: 12,
-  Unary: 11,
-  Op10: 10,
-  Op9: 9,
-  Op8: 8,
-  Op7: 7,
-  Op6: 6,
-  Op5: 5,
-  Op4: 4,
-  Op3: 3,
-  Op2: 2,
-  Op1: 1,
-  Op0: 0,
+  ColonEqExpr: 16,
+  Sigil: 15,
+  Dot: 14,
+  Suffix: 13,
+  Unary: 12,
+  Op10: 11,
+  Op9: 10,
+  Op8: 9,
+  Op7: 8,
+  Op6: 7,
+  Op5: 6,
+  Op4: 5,
+  Op3: 4,
+  Op2: 3,
+  Op1: 2,
+  Op0: 1,
 };
 
 const WordOp = {
@@ -115,15 +115,15 @@ module.exports = grammar({
 
     statement_list: $ =>
       choice(
-        sep1($._statement, ";"),
+        prec.right(sep1($._statement, ";")),
         seq(
           $._layout_start,
-          repeat1(seq($._statement, $._terminator)),
+          repeat1(seq($._statement, choice($._terminator, ";"))),
           $._layout_end
         )
       ),
 
-    _statement: $ => choice($._expression),
+    _statement: $ => prec(-1, choice($._expression)),
 
     _expression: $ =>
       choice(
@@ -131,7 +131,7 @@ module.exports = grammar({
         $.accent_quoted,
         $.binary_expression,
         $.bracket_expression,
-        $.call,
+        alias($._call_expression, $.call),
         $.curly_expression,
         $.dot_expression,
         $.parenthesized_expression,
@@ -140,18 +140,53 @@ module.exports = grammar({
         $.identifier
       ),
 
-    call: $ =>
+    _call_expression: $ => choice($._parenthesized_call, $._block_call),
+
+    _parenthesized_call: $ =>
       prec.right(
-        choice(
+        seq(
+          field("function", $._expression),
           seq(
-            field("function", $._expression),
-            choice(
-              seq(
-                token.immediate("("),
-                optional(field("arguments", $.argument_list)),
-                ")"
-              ),
-              field("arguments", $._expression)
+            token.immediate("("),
+            optional(field("arguments", $.argument_list)),
+            ")"
+          ),
+          optional(field("arguments", $.call_block_arguments))
+        )
+      ),
+
+    _block_call: $ =>
+      prec(
+        -10,
+        seq(
+          field("function", $._expression),
+          field("arguments", $.call_block_arguments)
+        )
+      ),
+
+    _command_expression: $ =>
+      prec.right(
+        seq(
+          field("function", $._expression),
+          field("arguments", alias($._expression, $.argument_list))
+        )
+      ),
+
+    call_block_arguments: $ =>
+      prec.right(
+        -10,
+        seq(
+          ":",
+          seqReq1(
+            $.statement_list,
+            repeat1(
+              choice(
+                $.of_branch,
+                $.elif_branch,
+                $.else_branch,
+                $.except_branch,
+                $.finally_branch
+              )
             )
           )
         )
@@ -159,6 +194,36 @@ module.exports = grammar({
 
     argument_list: $ =>
       sep1(choice($._maybe_colon_expression, $._maybe_equal_expression), ","),
+
+    of_branch: $ =>
+      seq(
+        ignoreStyle("of"),
+        field("values", $.expression_list),
+        ":",
+        $.statement_list
+      ),
+
+    elif_branch: $ =>
+      seq(
+        ignoreStyle("elif"),
+        field("condition", $._expression),
+        ":",
+        $.statement_list
+      ),
+
+    else_branch: $ => seq(ignoreStyle("else"), ":", $.statement_list),
+
+    except_branch: $ =>
+      seq(
+        ignoreStyle("except"),
+        optional(field("values", $.expression_list)),
+        ":",
+        $.statement_list
+      ),
+
+    finally_branch: $ => seq(ignoreStyle("finally"), ":", $.statement_list),
+
+    expression_list: $ => sep1($._expression, ","),
 
     colon_expression: $ =>
       seq(field("left", $._expression), ":", field("right", $._expression)),
@@ -239,7 +304,7 @@ module.exports = grammar({
         prec.left(Precedence.Unary, unaryExp($._unary_operator)),
         prec.left(
           Precedence.Sigil,
-          unaryExp(seq("@", repeat(choice(...OperatorChars))))
+          unaryExp(token(seq("@", repeat(choice(...OperatorChars)))))
         )
       );
     },
@@ -261,7 +326,6 @@ module.exports = grammar({
         seq(
           field("left", $._expression),
           field("operator", op),
-          / +/,
           field("right", $._expression)
         );
 
