@@ -16,6 +16,10 @@
       {
         "type": "_block_expression",
         "named": true
+      },
+      {
+        "type": "call",
+        "named": true
       }
     ]
   },
@@ -104,6 +108,10 @@
       {
         "type": "_simple_expression",
         "named": true
+      },
+      {
+        "type": "call",
+        "named": true
       }
     ]
   },
@@ -155,6 +163,10 @@
         },
         {
           "type": "colon_expression",
+          "named": true
+        },
+        {
+          "type": "equal_expression",
           "named": true
         }
       ]
@@ -428,6 +440,32 @@
     }
   },
   {
+    "type": "equal_expression",
+    "named": true,
+    "fields": {
+      "left": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_simple_expression",
+            "named": true
+          }
+        ]
+      },
+      "right": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_simple_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "escape_sequence",
     "named": true,
     "fields": {}
@@ -548,10 +586,6 @@
       "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "_block_expression",
-          "named": true
-        },
         {
           "type": "_simple_expression",
           "named": true

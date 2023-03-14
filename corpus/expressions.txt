@@ -363,6 +363,12 @@ foo x,
     y, "string",
     w(call(some other))
 
+foo bar foobar x
+
+foo:
+  foo bar, foo: bar bar
+  of x, y: other
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -393,7 +399,38 @@ foo x,
               (call
                 function: (identifier)
                 arguments: (argument_list
-                  (identifier))))))))))
+                  (identifier)))))))))
+  (call
+    function: (identifier)
+    arguments: (argument_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (call
+            function: (identifier)
+            arguments: (argument_list
+              (identifier)))))))
+  (call
+    function: (identifier)
+    arguments: (call_block_arguments
+      (statement_list
+        (call
+          function: (identifier)
+          arguments: (argument_list
+            (identifier)
+            (identifier))
+          arguments: (call_block_arguments
+            (statement_list
+              (call
+                function: (identifier)
+                arguments: (argument_list
+                  (identifier))))
+            (of_branch
+              values: (expression_list
+                (identifier)
+                (identifier))
+              (statement_list
+                (identifier)))))))))
 
 ================================================================================
 Block statements

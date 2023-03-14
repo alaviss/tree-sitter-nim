@@ -492,9 +492,10 @@ bool lex(Context& ctx, bool immediate)
     }
     break;
   case State::Colon:
-    if (ctx.valid(TokenType::Colon)) {
-      result = TokenType::Colon;
+    if (!ctx.valid(TokenType::Colon)) {
+      return false;
     }
+    result = TokenType::Colon;
     break;
   case State::MaybeDotOp:
     return false;

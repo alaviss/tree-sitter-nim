@@ -70,19 +70,6 @@ const Precedence = {
   Op0: 1,
 };
 
-const WordOp = {
-  9: token(choice(...["div", "mod", "shl", "shr"].map(ignoreStyle))),
-  5: token(
-    choice(
-      ...["not", "in", "notin", "is", "isnot", "of", "as", "from"].map(
-        ignoreStyle
-      )
-    )
-  ),
-  4: ignoreStyle("and"),
-  3: token(choice(...["or", "xor"].map(ignoreStyle))),
-};
-
 module.exports = grammar({
   name: "nim",
 
@@ -115,6 +102,10 @@ module.exports = grammar({
     $._simple_statement,
     $._block_statement,
   ],
+  conflicts: $ => [
+    [$._command_expression, $.binary_expression],
+    [$._command_expression, $.unary_expression, $.binary_expression],
+  ],
 
   rules: {
     source_file: $ => alias($.statement_list, ""),
@@ -122,9 +113,12 @@ module.exports = grammar({
     statement_list: $ =>
       choice(
         prec.right(
-          seq(
-            sep1($._simple_statement, ";"),
-            optional(seq(";", $._block_statement))
+          choice(
+            seq(
+              sep1($._simple_statement, ";"),
+              optional(seq(";", $._block_statement))
+            ),
+            seq(sep1($._simple_statement, ";"), $._terminator)
           )
         ),
         seq(
@@ -140,37 +134,37 @@ module.exports = grammar({
       ),
 
     // Any statement that doesn't contain a terminator
-    _simple_statement: $ => prec(-1, choice($._simple_expression)),
+    _simple_statement: $ =>
+      prec(-1, choice($._simple_expression, alias($._command_call, $.call))),
 
     // Any statement that contain a block (implicitly terminates)
-    _block_statement: $ => choice($._block_expression),
+    _block_statement: $ =>
+      choice($._block_expression, alias($._command_call_block, $.call)),
 
     // All expressions. Use only in rules that doesn't care about termination
-    _expression: $ => choice($._simple_expression, $._block_expression),
+    _expression: $ => choice($._simple_expression),
 
     // Any expression that doesn't contain a terminator
     _simple_expression: $ =>
-      prec.left(
-        choice(
-          $._literals,
-          $.accent_quoted,
-          $.binary_expression,
-          $.bracket_expression,
-          alias($._simple_call_expression, $.call),
-          $.curly_expression,
-          $.dot_expression,
-          $.parenthesized_expression,
-          $.tuple,
-          $.unary_expression,
-          $.identifier
-        )
+      choice(
+        $._literals,
+        $.accent_quoted,
+        $.binary_expression,
+        $.bracket_expression,
+        alias($._simple_call_expression, $.call),
+        $.curly_expression,
+        $.dot_expression,
+        $.parenthesized_expression,
+        $.tuple,
+        $.unary_expression,
+        $.identifier
       ),
 
     _block_expression: $ => choice(alias($._block_call_expression, $.call)),
 
     _simple_call_expression: $ =>
       choice($._parenthesized_call, $._command_expression),
-    _block_call_expression: $ => choice($._block_call_argument),
+    _block_call_expression: $ => choice($._call_with_block, $._block_call),
 
     _parenthesized_call: $ =>
       prec.right(
@@ -184,10 +178,13 @@ module.exports = grammar({
         )
       ),
 
-    _block_call_argument: $ =>
-      seq(
-        $._simple_call_expression,
-        field("arguments", $.call_block_arguments)
+    _call_with_block: $ =>
+      prec(
+        1,
+        seq(
+          $._simple_call_expression,
+          field("arguments", $.call_block_arguments)
+        )
       ),
 
     _block_call: $ =>
@@ -201,10 +198,26 @@ module.exports = grammar({
 
     _command_expression: $ =>
       prec.right(
+        1,
         seq(
           field("function", $._simple_expression),
           field("arguments", alias($._simple_expression, $.argument_list))
         )
+      ),
+
+    _command_call: $ =>
+      seq(
+        field("function", $._simple_expression),
+        field("arguments", alias($._command_call_arguments, $.argument_list))
+      ),
+
+    _command_call_block: $ =>
+      seq($._command_call, field("arguments", $.call_block_arguments)),
+
+    _command_call_arguments: $ =>
+      seq(
+        $._simple_expression,
+        repeat1(prec.right(seq(",", $._maybe_equal_expression)))
       ),
 
     call_block_arguments: $ =>
@@ -276,7 +289,7 @@ module.exports = grammar({
     _maybe_colon_expression: $ =>
       choice($._simple_expression, $.colon_expression),
     _maybe_equal_expression: $ =>
-      choice($._simple_expression, $.colon_expression),
+      choice($._simple_expression, $.equal_expression),
 
     tuple: $ =>
       choice(
@@ -346,13 +359,21 @@ module.exports = grammar({
       /** @param {RuleOrLiteral} op */
       const unaryExp = op => seq(op, field("argument", $._simple_expression));
       return choice(
-        prec.left(unaryExp(token(choice(...Object.values(WordOp))))),
+        ...[
+          $._wordop9,
+          $._wordop5,
+          $._wordop4,
+          $._wordop3,
+          // Avoid precedence clashing with of_branch
+          ignoreStyle("of"),
+          ignoreStyle("not"),
+        ].map(token => prec.left(unaryExp(token))),
         prec.left(
           Precedence.Unary,
           unaryExp(
             token(
               seq(
-                choice(...OperatorChars.filter(x => x != "@")),
+                choice(...OperatorChars.filter(x => x != "@" && x != ":")),
                 repeat(choice(...OperatorChars))
               )
             )
@@ -378,14 +399,14 @@ module.exports = grammar({
         .../** @type {[Rule, number][]} */ ([
           [$._binop10l, Precedence.Op10],
           [$._binop9, Precedence.Op9],
-          [WordOp[9], Precedence.Op9],
+          [$._wordop9, Precedence.Op9],
           [$._binop8, Precedence.Op8],
           [$._binop7, Precedence.Op7],
           [$._binop6, Precedence.Op6],
           [$._binop5, Precedence.Op5],
-          [WordOp[5], Precedence.Op5],
-          [WordOp[4], Precedence.Op4],
-          [WordOp[3], Precedence.Op3],
+          [$._wordop5, Precedence.Op5],
+          [$._wordop4, Precedence.Op4],
+          [$._wordop3, Precedence.Op3],
           [$._binop2, Precedence.Op2],
           [$._binop1, Precedence.Op1],
           [$._binop0, Precedence.Op0],
@@ -395,6 +416,15 @@ module.exports = grammar({
         prec.right(Precedence.Op10, binExp($._binop10r))
       );
     },
+
+    _wordop9: _ =>
+      token(choice(...["div", "mod", "shl", "shr"].map(ignoreStyle))),
+    _wordop5: _ =>
+      token(
+        choice(...["in", "notin", "is", "isnot", "as", "from"].map(ignoreStyle))
+      ),
+    _wordop4: _ => ignoreStyle("and"),
+    _wordop3: _ => token(choice(...["or", "xor"].map(ignoreStyle))),
 
     _literals: $ =>
       choice(
