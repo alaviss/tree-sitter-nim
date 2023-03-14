@@ -115,23 +115,41 @@ module.exports = grammar({
 
     statement_list: $ =>
       choice(
-        prec.right(sep1($._statement, ";")),
+        prec.right(
+          seq(
+            sep1($._simple_statement, ";"),
+            optional(seq(";", $._block_statement))
+          )
+        ),
         seq(
           $._layout_start,
-          repeat1(seq($._statement, choice($._terminator, ";"))),
+          repeat1(
+            choice(
+              seq($._simple_statement, choice($._terminator, ";")),
+              seq($._block_statement)
+            )
+          ),
           $._layout_end
         )
       ),
 
-    _statement: $ => prec(-1, choice($._expression)),
+    // Any statement that doesn't contain a terminator
+    _simple_statement: $ => prec(-1, choice($._simple_expression)),
 
-    _expression: $ =>
+    // Any statement that contain a block (implicitly terminates)
+    _block_statement: $ => choice($._block_expression),
+
+    // All expressions. Use only in rules that doesn't care about termination
+    _expression: $ => choice($._simple_expression, $._block_expression),
+
+    // Any expression that doesn't contain a terminator
+    _simple_expression: $ =>
       choice(
         $._literals,
         $.accent_quoted,
         $.binary_expression,
         $.bracket_expression,
-        alias($._call_expression, $.call),
+        alias($._simple_call_expression, $.call),
         $.curly_expression,
         $.dot_expression,
         $.parenthesized_expression,
@@ -140,26 +158,31 @@ module.exports = grammar({
         $.identifier
       ),
 
-    _call_expression: $ => choice($._parenthesized_call, $._block_call),
+    _block_expression: $ => choice(alias($._block_call_expression, $.call)),
+
+    _simple_call_expression: $ => prec.left(choice($._parenthesized_call)),
+    _block_call_expression: $ => choice($._block_parenthesized_call),
 
     _parenthesized_call: $ =>
       prec.right(
         seq(
-          field("function", $._expression),
+          field("function", $._simple_expression),
           seq(
             token.immediate("("),
             optional(field("arguments", $.argument_list)),
             ")"
-          ),
-          optional(field("arguments", $.call_block_arguments))
+          )
         )
       ),
+
+    _block_parenthesized_call: $ =>
+      seq($._parenthesized_call, field("arguments", $.call_block_arguments)),
 
     _block_call: $ =>
       prec(
         -10,
         seq(
-          field("function", $._expression),
+          field("function", $._simple_expression),
           field("arguments", $.call_block_arguments)
         )
       ),
@@ -167,8 +190,8 @@ module.exports = grammar({
     _command_expression: $ =>
       prec.right(
         seq(
-          field("function", $._expression),
-          field("arguments", alias($._expression, $.argument_list))
+          field("function", $._simple_expression),
+          field("arguments", alias($._simple_expression, $.argument_list))
         )
       ),
 
@@ -206,7 +229,7 @@ module.exports = grammar({
     elif_branch: $ =>
       seq(
         ignoreStyle("elif"),
-        field("condition", $._expression),
+        field("condition", $._simple_expression),
         ":",
         $.statement_list
       ),
@@ -223,21 +246,31 @@ module.exports = grammar({
 
     finally_branch: $ => seq(ignoreStyle("finally"), ":", $.statement_list),
 
-    expression_list: $ => sep1($._expression, ","),
+    expression_list: $ => sep1($._simple_expression, ","),
 
     colon_expression: $ =>
-      seq(field("left", $._expression), ":", field("right", $._expression)),
+      seq(
+        field("left", $._simple_expression),
+        ":",
+        field("right", $._simple_expression)
+      ),
     equal_expression: $ =>
-      seq(field("left", $._expression), "=", field("right", $._expression)),
+      seq(
+        field("left", $._simple_expression),
+        "=",
+        field("right", $._simple_expression)
+      ),
 
-    _maybe_colon_expression: $ => choice($._expression, $.colon_expression),
-    _maybe_equal_expression: $ => choice($._expression, $.colon_expression),
+    _maybe_colon_expression: $ =>
+      choice($._simple_expression, $.colon_expression),
+    _maybe_equal_expression: $ =>
+      choice($._simple_expression, $.colon_expression),
 
     tuple: $ =>
       choice(
         seq(
           "(",
-          $._expression,
+          $._simple_expression,
           ",",
           optional(sep1($._maybe_colon_expression, ",")),
           ")"
@@ -256,7 +289,7 @@ module.exports = grammar({
       prec.left(
         Precedence.Suffix,
         seq(
-          field("left", $._expression),
+          field("left", $._simple_expression),
           "[",
           field("right", $.argument_list),
           "]"
@@ -267,7 +300,7 @@ module.exports = grammar({
       prec.left(
         Precedence.Suffix,
         seq(
-          field("left", $._expression),
+          field("left", $._simple_expression),
           "{",
           field("right", $.argument_list),
           "}"
@@ -278,7 +311,7 @@ module.exports = grammar({
       prec.left(
         Precedence.Dot,
         seq(
-          field("left", $._expression),
+          field("left", $._simple_expression),
           field(
             "operator",
             token(
@@ -293,13 +326,13 @@ module.exports = grammar({
               )
             )
           ),
-          field("right", $._expression)
+          field("right", $._simple_expression)
         )
       ),
 
     unary_expression: $ => {
       /** @param {RuleOrLiteral} op */
-      const unaryExp = op => seq(op, field("argument", $._expression));
+      const unaryExp = op => seq(op, field("argument", $._simple_expression));
       return choice(
         prec.left(Precedence.Unary, unaryExp($._unary_operator)),
         prec.left(
@@ -324,9 +357,9 @@ module.exports = grammar({
       /** @param {RuleOrLiteral} op */
       const binExp = op =>
         seq(
-          field("left", $._expression),
+          field("left", $._simple_expression),
           field("operator", op),
-          field("right", $._expression)
+          field("right", $._simple_expression)
         );
 
       return choice(

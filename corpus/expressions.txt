@@ -311,7 +311,36 @@ of 1, 2:
   (call
     function: (identifier))
   (call
-    function: (identifier)))
+    function: (identifier))
+  (call
+    function: (identifier)
+    arguments: (call_block_arguments
+      (statement_list
+        (binary_expression
+          left: (integer_literal)
+          right: (integer_literal))
+        (identifier))
+      (else_branch
+        (statement_list
+          (identifier)))))
+  (call
+    function: (identifier)
+    arguments: (call_block_arguments
+      (of_branch
+        values: (expression_list
+          (integer_literal)
+          (integer_literal))
+        (statement_list
+          (call
+            function: (identifier)
+            arguments: (argument_list
+              (identifier))
+            arguments: (call_block_arguments
+              (statement_list
+                (identifier))
+              (else_branch
+                (statement_list
+                  (identifier))))))))))
 
 ================================================================================
 Command calls
