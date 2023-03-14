@@ -47,6 +47,8 @@ $a.b
 
 @(a.b)
 
+not a.c
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -68,13 +70,19 @@ $a.b
     argument: (parenthesized_expression
       (dot_expression
         left: (identifier)
-        right: (identifier)))))
+        right: (identifier))))
+  (unary_expression
+    argument: (dot_expression
+      left: (identifier)
+      right: (identifier))))
 
 ================================================================================
 Binary expressions
 ================================================================================
 
 1 + 100
+
+a and b
 
 1 * 100 - 10 / 2
 
@@ -102,6 +110,9 @@ a += c >= b
   (binary_expression
     left: (integer_literal)
     right: (integer_literal))
+  (binary_expression
+    left: (identifier)
+    right: (identifier))
   (binary_expression
     left: (binary_expression
       left: (integer_literal)

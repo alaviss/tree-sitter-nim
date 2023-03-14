@@ -109,6 +109,12 @@ module.exports = grammar({
   ],
   extras: $ => [/[\n\r ]+/, $.comment],
   inline: $ => [$._maybe_colon_expression, $._maybe_equal_expression],
+  supertypes: $ => [
+    $._simple_expression,
+    $._block_expression,
+    $._simple_statement,
+    $._block_statement,
+  ],
 
   rules: {
     source_file: $ => alias($.statement_list, ""),
@@ -144,24 +150,27 @@ module.exports = grammar({
 
     // Any expression that doesn't contain a terminator
     _simple_expression: $ =>
-      choice(
-        $._literals,
-        $.accent_quoted,
-        $.binary_expression,
-        $.bracket_expression,
-        alias($._simple_call_expression, $.call),
-        $.curly_expression,
-        $.dot_expression,
-        $.parenthesized_expression,
-        $.tuple,
-        $.unary_expression,
-        $.identifier
+      prec.left(
+        choice(
+          $._literals,
+          $.accent_quoted,
+          $.binary_expression,
+          $.bracket_expression,
+          alias($._simple_call_expression, $.call),
+          $.curly_expression,
+          $.dot_expression,
+          $.parenthesized_expression,
+          $.tuple,
+          $.unary_expression,
+          $.identifier
+        )
       ),
 
     _block_expression: $ => choice(alias($._block_call_expression, $.call)),
 
-    _simple_call_expression: $ => prec.left(choice($._parenthesized_call)),
-    _block_call_expression: $ => choice($._block_parenthesized_call),
+    _simple_call_expression: $ =>
+      choice($._parenthesized_call, $._command_expression),
+    _block_call_expression: $ => choice($._block_call_argument),
 
     _parenthesized_call: $ =>
       prec.right(
@@ -175,8 +184,11 @@ module.exports = grammar({
         )
       ),
 
-    _block_parenthesized_call: $ =>
-      seq($._parenthesized_call, field("arguments", $.call_block_arguments)),
+    _block_call_argument: $ =>
+      seq(
+        $._simple_call_expression,
+        field("arguments", $.call_block_arguments)
+      ),
 
     _block_call: $ =>
       prec(
@@ -334,24 +346,24 @@ module.exports = grammar({
       /** @param {RuleOrLiteral} op */
       const unaryExp = op => seq(op, field("argument", $._simple_expression));
       return choice(
-        prec.left(Precedence.Unary, unaryExp($._unary_operator)),
+        prec.left(unaryExp(token(choice(...Object.values(WordOp))))),
+        prec.left(
+          Precedence.Unary,
+          unaryExp(
+            token(
+              seq(
+                choice(...OperatorChars.filter(x => x != "@")),
+                repeat(choice(...OperatorChars))
+              )
+            )
+          )
+        ),
         prec.left(
           Precedence.Sigil,
           unaryExp(token(seq("@", repeat(choice(...OperatorChars)))))
         )
       );
     },
-
-    _unary_operator: _ =>
-      token(
-        choice(
-          ...Object.values(WordOp),
-          seq(
-            choice(...OperatorChars.filter(x => x != "@")),
-            repeat(choice(...OperatorChars))
-          )
-        )
-      ),
 
     binary_expression: $ => {
       /** @param {RuleOrLiteral} op */
