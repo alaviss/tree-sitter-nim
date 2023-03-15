@@ -104,6 +104,8 @@ $a + b
 
 a += c >= b
 
+c of RootObj
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -171,7 +173,10 @@ a += c >= b
     left: (identifier)
     right: (binary_expression
       left: (identifier)
-      right: (identifier))))
+      right: (identifier)))
+  (binary_expression
+    left: (identifier)
+    right: (identifier)))
 
 ================================================================================
 Dot expressions

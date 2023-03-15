@@ -405,6 +405,7 @@ module.exports = grammar({
           [$._binop6, Precedence.Op6],
           [$._binop5, Precedence.Op5],
           [$._wordop5, Precedence.Op5],
+          [ignoreStyle("of"), Precedence.Op5],
           [$._wordop4, Precedence.Op4],
           [$._wordop3, Precedence.Op3],
           [$._binop2, Precedence.Op2],
