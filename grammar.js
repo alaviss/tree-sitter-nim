@@ -337,20 +337,7 @@ module.exports = grammar({
         Precedence.Dot,
         seq(
           field("left", $._simple_expression),
-          field(
-            "operator",
-            token(
-              seq(
-                ".",
-                optional(
-                  seq(
-                    choice(...OperatorChars.filter(x => x != ".")),
-                    repeat(choice(...OperatorChars))
-                  )
-                )
-              )
-            )
-          ),
+          field("operator", "."),
           field("right", $._simple_expression)
         )
       ),

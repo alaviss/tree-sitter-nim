@@ -394,9 +394,9 @@ bool lex(Context& ctx, bool immediate)
     Arrow,
     Assignment,
     Colon,
+    Dot,
     Equal,
     MaybeArrow,
-    MaybeDotOp,
     Regular,
   };
 
@@ -410,7 +410,7 @@ bool lex(Context& ctx, bool immediate)
   switch (first_character) {
   case '.':
     ctx.consume();
-    state = State::MaybeDotOp;
+    state = State::Dot;
     break;
   case '=':
     ctx.consume();
@@ -427,16 +427,6 @@ bool lex(Context& ctx, bool immediate)
 
   while (is_op_char(ctx.lookahead())) {
     switch (state) {
-    case State::MaybeDotOp:
-      switch (ctx.lookahead()) {
-      case '.':
-        state = State::Regular;
-        ctx.consume();
-        break;
-      default:
-        return false;
-      }
-      break;
     case State::Assignment:
     case State::Equal:
     case State::MaybeArrow:
@@ -451,6 +441,7 @@ bool lex(Context& ctx, bool immediate)
       break;
     case State::Arrow:
     case State::Colon:
+    case State::Dot:
     case State::Regular:
       switch (ctx.lookahead()) {
       case '~':
@@ -497,7 +488,7 @@ bool lex(Context& ctx, bool immediate)
     }
     result = TokenType::Colon;
     break;
-  case State::MaybeDotOp:
+  case State::Dot:
     return false;
   default:
     break;

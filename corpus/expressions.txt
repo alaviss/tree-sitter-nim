@@ -191,11 +191,11 @@ $a.b
 --------------------------------------------------------------------------------
 
 (source_file
-  (dot_expression
-    left: (dot_expression
+  (binary_expression
+    left: (identifier)
+    right: (dot_expression
       left: (identifier)
-      right: (identifier))
-    right: (identifier))
+      right: (identifier)))
   (binary_expression
     left: (dot_expression
       left: (identifier)
