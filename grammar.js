@@ -136,7 +136,10 @@ module.exports = grammar({
 
     // Any statement that doesn't contain a terminator
     _simple_statement: $ =>
-      prec(-1, choice($._simple_expression, alias($._command_call, $.call))),
+      prec(
+        -1,
+        choice($._simple_expression, alias($._command_call, $.call), $.pragma)
+      ),
 
     // Any statement that contain a block (implicitly terminates)
     _block_statement: $ =>
@@ -167,8 +170,18 @@ module.exports = grammar({
         $.block,
         $.case,
         $.if,
-        $.when,
-        $.try
+        $.pragma_block,
+        $.try,
+        $.when
+      ),
+
+    pragma_block: $ => seq($.pragma, ":", field("body", $.statement_list)),
+
+    pragma: $ =>
+      seq(
+        "{.",
+        alias($.argument_list, $.pragma_list),
+        token(choice(".}", "}"))
       ),
 
     try: $ =>

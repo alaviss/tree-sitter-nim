@@ -927,3 +927,38 @@ except: echo y
           function: (identifier)
           arguments: (argument_list
             (identifier)))))))
+
+================================================================================
+Pragma statements
+================================================================================
+
+{.line: instantiationInfo()}: echo y
+
+{.noSideEffects.}: foo
+
+{.someRandomPragma.}
+
+--------------------------------------------------------------------------------
+
+(ERROR
+  (pragma_block
+    (pragma
+      (pragma_list
+        (colon_expression
+          left: (identifier)
+          right: (call
+            function: (identifier)))))
+    body: (statement_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (identifier)))))
+  (pragma_block
+    (pragma
+      (pragma_list
+        (identifier)))
+    body: (statement_list
+      (identifier)))
+  (pragma
+    (pragma_list
+      (identifier))))
