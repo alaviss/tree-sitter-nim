@@ -981,3 +981,24 @@ Pragma statements
   (pragma
     (pragma_list
       (identifier))))
+
+================================================================================
+Type expressions
+================================================================================
+
+ref int
+
+distinct int
+
+ptr ptr char
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (ref_type
+    (identifier))
+  (distinct_type
+    (identifier))
+  (pointer_type
+    (pointer_type
+      (identifier))))
