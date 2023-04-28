@@ -240,6 +240,10 @@
       {
         "type": "var_section",
         "named": true
+      },
+      {
+        "type": "while",
+        "named": true
       }
     ]
   },
@@ -2156,6 +2160,32 @@
         "types": [
           {
             "type": "statement_list",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "while",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
             "named": true
           }
         ]

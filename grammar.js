@@ -140,7 +140,8 @@ module.exports = grammar({
         alias($._command_call_block, $.call),
         $._simple_statement,
         $.bind_statement,
-        $.mixin_statement
+        $.mixin_statement,
+        $.while
       ),
 
     bind_statement: $ =>
@@ -163,6 +164,14 @@ module.exports = grammar({
           field("operator", "."),
           field("right", $._symbol)
         )
+      ),
+
+    while: $ =>
+      seq(
+        ignoreStyle("while"),
+        field("condition", $._expression),
+        ":",
+        field("body", $.statement_list)
       ),
 
     _simple_statement: $ =>
@@ -232,7 +241,7 @@ module.exports = grammar({
       seq(ignoreStyle("include"), alias($.expression_list, "include files")),
 
     discard_statement: $ =>
-      seq(ignoreStyle("discard"), optional($._expression)),
+      prec.right(seq(ignoreStyle("discard"), optional($._expression))),
 
     assembly_statement: $ =>
       seq(
@@ -242,16 +251,23 @@ module.exports = grammar({
       ),
 
     break_statement: $ =>
-      seq(ignoreStyle("break"), optional(field("label", $._expression))),
+      prec.right(
+        seq(ignoreStyle("break"), optional(field("label", $._expression)))
+      ),
 
     continue_statement: $ =>
-      seq(ignoreStyle("continue"), optional(field("label", $._expression))),
+      prec.right(
+        seq(ignoreStyle("continue"), optional(field("label", $._expression)))
+      ),
 
-    return_statement: $ => seq(ignoreStyle("return"), optional($._expression)),
+    return_statement: $ =>
+      prec.right(seq(ignoreStyle("return"), optional($._expression))),
 
-    raise_statement: $ => seq(ignoreStyle("raise"), optional($._expression)),
+    raise_statement: $ =>
+      prec.right(seq(ignoreStyle("raise"), optional($._expression))),
 
-    yield_statement: $ => seq(ignoreStyle("yield"), optional($._expression)),
+    yield_statement: $ =>
+      prec.right(seq(ignoreStyle("yield"), optional($._expression))),
 
     _declaration: $ =>
       choice($.const_section, $.let_section, $.type_section, $.var_section),
