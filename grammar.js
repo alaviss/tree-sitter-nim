@@ -142,7 +142,7 @@ module.exports = grammar({
       choice($._block_expression, alias($._command_call_block, $.call)),
 
     // All expressions. Use only in rules that doesn't care about termination
-    _expression: $ => choice($._simple_expression),
+    _expression: $ => choice($._simple_expression, $._block_expression),
 
     // Any expression that doesn't contain a terminator
     _simple_expression: $ =>
@@ -160,7 +160,73 @@ module.exports = grammar({
         $.identifier
       ),
 
-    _block_expression: $ => choice(alias($._block_call_expression, $.call)),
+    _block_expression: $ =>
+      choice(
+        alias($._block_call_expression, $.call),
+        $.block,
+        $.case,
+        $.if,
+        $.when,
+        $.try
+      ),
+
+    try: $ =>
+      prec.right(
+        seq(
+          ignoreStyle("try"),
+          ":",
+          field("body", $.statement_list),
+          seqReq1(repeat1($.except_branch), $.finally_branch)
+        )
+      ),
+
+    case: $ =>
+      seq(
+        ignoreStyle("case"),
+        field("value", $._simple_expression),
+        optional(":"),
+        choice(
+          seq($._terminator, $._case_body),
+          seq($._layout_start, $._case_body, $._layout_end)
+        )
+      ),
+
+    _case_body: $ =>
+      prec.right(
+        seqReq1(repeat1($.of_branch), repeat1($.elif_branch), $.else_branch)
+      ),
+
+    when: $ =>
+      prec.right(
+        seq(
+          ignoreStyle("when"),
+          field("condition", $._simple_expression),
+          ":",
+          field("consequence", $.statement_list),
+          repeat(field("alternative", $.elif_branch)),
+          optional(field("alternative", $.else_branch))
+        )
+      ),
+
+    if: $ =>
+      prec.right(
+        seq(
+          ignoreStyle("if"),
+          field("condition", $._simple_expression),
+          ":",
+          field("consequence", $.statement_list),
+          repeat(field("alternative", $.elif_branch)),
+          optional(field("alternative", $.else_branch))
+        )
+      ),
+
+    block: $ =>
+      seq(
+        ignoreStyle("block"),
+        optional(field("label", $._simple_expression)),
+        ":",
+        field("body", $.statement_list)
+      ),
 
     _simple_call_expression: $ =>
       choice($._parenthesized_call, $._command_expression),
@@ -256,7 +322,7 @@ module.exports = grammar({
         ignoreStyle("elif"),
         field("condition", $._simple_expression),
         ":",
-        $.statement_list
+        field("consequence", $.statement_list)
       ),
 
     else_branch: $ => seq(ignoreStyle("else"), ":", $.statement_list),

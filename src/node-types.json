@@ -4,7 +4,27 @@
     "named": true,
     "subtypes": [
       {
+        "type": "block",
+        "named": true
+      },
+      {
         "type": "call",
+        "named": true
+      },
+      {
+        "type": "case",
+        "named": true
+      },
+      {
+        "type": "if",
+        "named": true
+      },
+      {
+        "type": "try",
+        "named": true
+      },
+      {
+        "type": "when",
         "named": true
       }
     ]
@@ -199,6 +219,32 @@
     }
   },
   {
+    "type": "block",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      },
+      "label": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "_simple_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "bracket_expression",
     "named": true,
     "fields": {
@@ -284,6 +330,40 @@
         },
         {
           "type": "statement_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "case",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_simple_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "elif_branch",
+          "named": true
+        },
+        {
+          "type": "else_branch",
+          "named": true
+        },
+        {
+          "type": "of_branch",
           "named": true
         }
       ]
@@ -421,17 +501,17 @@
             "named": true
           }
         ]
+      },
+      "consequence": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
       }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "statement_list",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -558,6 +638,46 @@
     }
   },
   {
+    "type": "if",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "elif_branch",
+            "named": true
+          },
+          {
+            "type": "else_branch",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_simple_expression",
+            "named": true
+          }
+        ]
+      },
+      "consequence": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "integer_literal",
     "named": true,
     "fields": {}
@@ -596,6 +716,10 @@
       "multiple": false,
       "required": true,
       "types": [
+        {
+          "type": "_block_expression",
+          "named": true
+        },
         {
           "type": "_simple_expression",
           "named": true
@@ -643,6 +767,36 @@
     }
   },
   {
+    "type": "try",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "except_branch",
+          "named": true
+        },
+        {
+          "type": "finally_branch",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "tuple",
     "named": true,
     "fields": {},
@@ -671,6 +825,46 @@
         "types": [
           {
             "type": "_simple_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "when",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "elif_branch",
+            "named": true
+          },
+          {
+            "type": "else_branch",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_simple_expression",
+            "named": true
+          }
+        ]
+      },
+      "consequence": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
             "named": true
           }
         ]

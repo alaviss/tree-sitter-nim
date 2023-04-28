@@ -374,6 +374,11 @@ foo:
   foo bar, foo: bar bar
   of x, y: other
 
+foo "xyz"
+
+foo """
+xyz"""
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -435,7 +440,15 @@ foo:
                 (identifier)
                 (identifier))
               (statement_list
-                (identifier)))))))))
+                (identifier))))))))
+  (call
+    function: (identifier)
+    arguments: (argument_list
+      (string_literal)))
+  (call
+    function: (identifier)
+    arguments: (argument_list
+      (string_literal))))
 
 ================================================================================
 Block statements
@@ -460,7 +473,7 @@ let y = block:
     body: (statement_list
       (integer_literal)))
   (block
-    name: (identifier)
+    label: (identifier)
     body: (statement_list
       (call
         function: (identifier)
@@ -547,7 +560,7 @@ else: expr2
         condition: (identifier)
         consequence: (statement_list
           (string_literal))
-        alternative: (elif_clause
+        alternative: (elif_branch
           condition: (identifier)
           consequence: (statement_list
             (integer_literal))))
@@ -555,8 +568,8 @@ else: expr2
         function: (identifier)
         arguments: (argument_list
           (identifier))))
-    alternative: (else_clause
-      body: (statement_list
+    alternative: (else_branch
+      (statement_list
         (integer_literal))))
   (let_section
     (variable_declaration
@@ -565,12 +578,12 @@ else: expr2
         condition: (boolean_literal)
         consequence: (statement_list
           (integer_literal))
-        alternative: (elif_clause
+        alternative: (elif_branch
           condition: (identifier)
           consequence: (statement_list
             (string_literal)))
-        alternative: (else_clause
-          body: (statement_list
+        alternative: (else_branch
+          consequence: (statement_list
             (integer_literal))))))
   (block
     body: (statement_list
@@ -582,14 +595,14 @@ else: expr2
             consequence: (statement_list
               (integer_literal))
             alternative: (else_clause
-              body: (statement_list
+              (statement_list
                 (float_literal))))))))
   (if
     condition: (boolean_literal)
     consequence: (statement_list
       (identifier))
-    alternative: (else_clause
-      body: (statement_list
+    alternative: (else_branch
+      (statement_list
         (identifier)))))
 
 ================================================================================
@@ -862,8 +875,9 @@ except: echo y
         arguments: (argument_list
           (string_literal))))
     (except_branch
-      exception: (identifier)
-      body: (statement_list
+      values: (expression_list
+        (identifier))
+      (statement_list
         (call
           function: (identifier)
           arguments: (argument_list
@@ -879,22 +893,24 @@ except: echo y
         arguments: (argument_list
           (string_literal))))
     (except_branch
-      exception: (identifier)
-      body: (statement_list
+      values: (expression_list
+        (identifier))
+      (statement_list
         (call
           function: (identifier)
           arguments: (argument_list
             (identifier)))))
     (except_branch
-      exception: (identifier)
-      exception: (identifier)
-      body: (statement_list
+      values: (expression_list
+        (identifier)
+        (identifier))
+      (statement_list
         (call
           function: (identifier)
           arguments: (argument_list
             (identifier)))))
     (finally_branch
-      body: (statement_list
+      (statement_list
         (call
           function: (identifier)
           arguments: (argument_list
@@ -906,7 +922,7 @@ except: echo y
         arguments: (argument_list
           (identifier))))
     (except_branch
-      body: (statement_list
+      (statement_list
         (call
           function: (identifier)
           arguments: (argument_list
