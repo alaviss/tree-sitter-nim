@@ -108,7 +108,8 @@ module.exports = grammar({
   ],
 
   rules: {
-    source_file: $ => alias($.statement_list, ""),
+    source_file: $ =>
+      choice(alias($.statement_list, ""), seq($._layout_start, $._layout_end)),
 
     statement_list: $ =>
       choice(

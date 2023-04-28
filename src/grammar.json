@@ -3,13 +3,31 @@
   "word": "identifier",
   "rules": {
     "source_file": {
-      "type": "ALIAS",
-      "content": {
-        "type": "SYMBOL",
-        "name": "statement_list"
-      },
-      "named": false,
-      "value": ""
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "statement_list"
+          },
+          "named": false,
+          "value": ""
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_layout_start"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_layout_end"
+            }
+          ]
+        }
+      ]
     },
     "statement_list": {
       "type": "CHOICE",
