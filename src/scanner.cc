@@ -176,7 +176,7 @@ public:
   /// @returns The next lookahead character.
   char32_t advance(bool skip = false)
   {
-    counter_ += (int)eof();
+    counter_ += (int)!eof();
     lexer_->advance(lexer_, skip);
     return lookahead();
   }
@@ -546,6 +546,7 @@ bool consume_end_marker(Context& ctx, Marker type)
       return false;
     }
     if (type == Marker::BlockComment) {
+      ctx.consume();
       return true;
     }
     if (ctx.consume() != '#') {
@@ -598,13 +599,25 @@ bool lex(Context& ctx)
     case Marker::BlockComment:
     case Marker::BlockDocComment:
       nesting++;
+#ifdef TREE_SITTER_INTERNAL_BUILD
+      if (getenv("TREE_SITTER_DEBUG")) {
+        cerr << "lex_nim: block comment nest level: " << nesting << '\n';
+      }
+#endif
       break;
     default:
       break;
     }
     const auto want_end = nesting > 0 || !long_doc ? Marker::BlockComment
                                                    : Marker::BlockDocComment;
+
     if (consume_end_marker(ctx, want_end)) {
+#ifdef TREE_SITTER_INTERNAL_BUILD
+      if (getenv("TREE_SITTER_DEBUG")) {
+        cerr << "lex_nim: block comment terminate nest level: " << nesting
+             << '\n';
+      }
+#endif
       if (nesting == 0) {
         return ctx.finish(TokenType::Comment);
       }
