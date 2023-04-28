@@ -1002,3 +1002,60 @@ ptr ptr char
   (pointer_type
     (pointer_type
       (identifier))))
+
+================================================================================
+Routine expressions
+================================================================================
+
+proc(x: int, y: string)
+
+proc (x: int) {.cdecl.} = x + 10
+
+iterator (s: string) =
+  for c in s:
+    yield c
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (proc_expression
+    parameters: (parameter_list
+      (parameter_declaration
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        type: (identifier))
+      (parameter_declaration
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        type: (identifier))))
+  (proc_expression
+    parameters: (parameter_list
+      (parameter_declaration
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        type: (identifier)))
+    pragma: (pragma_list
+      (identifier))
+    body: (statement_list
+      (binary_expression
+        left: (identifier)
+        right: (integer_literal))))
+  (iterator_expression
+    parameters: (parameter_list
+      (parameter_declaration
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        type: (identifier)))
+    body: (statement_list
+      (for
+        left: (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        right: (identifier)
+        body: (statement_list
+          (yield_statement
+            (identifier)))))))

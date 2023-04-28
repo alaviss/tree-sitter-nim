@@ -142,7 +142,8 @@ module.exports = grammar({
         $.bind_statement,
         $.mixin_statement,
         $.while,
-        $.for
+        $.for,
+        $.static_statement
       ),
 
     bind_statement: $ =>
@@ -184,6 +185,9 @@ module.exports = grammar({
         ":",
         field("body", $.statement_list)
       ),
+
+    static_statement: $ =>
+      seq(ignoreStyle("static"), ":", field("body", $.statement_list)),
 
     _simple_statement: $ =>
       prec(
@@ -281,7 +285,45 @@ module.exports = grammar({
       prec.right(seq(ignoreStyle("yield"), optional($._expression))),
 
     _declaration: $ =>
-      choice($.const_section, $.let_section, $.type_section, $.var_section),
+      choice(
+        $.const_section,
+        $.let_section,
+        $.type_section,
+        $.var_section,
+        $.proc_declaration,
+        $.func_declaration,
+        $.method_declaration,
+        $.iterator_declaration,
+        $.macro_declaration,
+        $.template_declaration,
+        $.converter_declaration
+      ),
+
+    proc_declaration: $ => seq(ignoreStyle("proc"), $._routine_declaration),
+    func_declaration: $ => seq(ignoreStyle("func"), $._routine_declaration),
+    method_declaration: $ => seq(ignoreStyle("method"), $._routine_declaration),
+    iterator_declaration: $ =>
+      seq(ignoreStyle("iterator"), $._routine_declaration),
+    macro_declaration: $ => seq(ignoreStyle("macro"), $._routine_declaration),
+    template_declaration: $ =>
+      seq(ignoreStyle("template"), $._routine_declaration),
+    converter_declaration: $ =>
+      seq(ignoreStyle("converter"), $._routine_declaration),
+
+    _routine_declaration: $ =>
+      seq(
+        field("name", $._maybe_exported_symbol),
+        optional(field("rewrite_pattern", $.term_rewriting_pattern)),
+        optional($._generic_parameter_list),
+        optional(
+          seq("(", optional(field("parameters", $.parameter_list)), ")")
+        ),
+        optional(seq(":", field("return_type", $._simple_expression))),
+        optional(field("pragma", $._pragma)),
+        optional(seq("=", field("body", $.statement_list)))
+      ),
+
+    term_rewriting_pattern: $ => seq("{", $._statement, "}"),
 
     type_section: $ =>
       seq(
@@ -303,12 +345,13 @@ module.exports = grammar({
       prec.right(
         seq(
           $._maybe_exported_symbol,
-          optional(
-            seq("[", alias($.parameter_list, $.generic_parameter_list), "]")
-          ),
+          optional($._generic_parameter_list),
           optional(field("pragma", $._pragma))
         )
       ),
+
+    _generic_parameter_list: $ =>
+      seq("[", alias($.parameter_list, $.generic_parameter_list), "]"),
 
     parameter_list: $ =>
       sep1(
@@ -526,28 +569,6 @@ module.exports = grammar({
     _symbol: $ =>
       seq(choice($.identifier, $.accent_quoted, $.blank_identifier)),
 
-    // Any expression that doesn't contain a _terminator
-    _simple_expression: $ =>
-      choice(
-        $._literals,
-        $.accent_quoted,
-        $.binary_expression,
-        $.bracket_expression,
-        alias($._simple_call_expression, $.call),
-        $.curly_expression,
-        $.dot_expression,
-        $.parenthesized_expression,
-        $.tuple,
-        $.tuple_type,
-        $.object_type,
-        $.distinct_type,
-        $.pointer_type,
-        $.ref_type,
-        $.var_type,
-        $.unary_expression,
-        $.identifier
-      ),
-
     _expression: $ =>
       choice(
         alias($._block_call_expression, $.call),
@@ -557,42 +578,25 @@ module.exports = grammar({
         $.if,
         $.pragma_block,
         $.try,
-        $.when
+        $.when,
+        $.proc_expression,
+        $.func_expression,
+        $.iterator_expression
       ),
 
-    tuple_type: $ =>
-      prec.right(
-        seq(
-          ignoreStyle("tuple"),
-          optional(
-            seq(
-              "[",
-              sep1(
-                alias($.variable_declaration, $.field_declaration),
-                token(choice(",", ";"))
-              ),
-              "]"
-            )
-          )
-        )
-      ),
+    proc_expression: $ => seq(ignoreStyle("proc"), $._routine_expression),
+    func_expression: $ => seq(ignoreStyle("func"), $._routine_expression),
+    iterator_expression: $ =>
+      seq(ignoreStyle("iterator"), $._routine_expression),
 
-    object_type: _ => ignoreStyle("object"),
-
-    distinct_type: $ =>
-      prec.right(seq(ignoreStyle("distinct"), $._simple_expression)),
-    pointer_type: $ =>
-      prec.right(seq(ignoreStyle("ptr"), $._simple_expression)),
-    ref_type: $ => prec.right(seq(ignoreStyle("ref"), $._simple_expression)),
-    var_type: $ => prec.right(seq(ignoreStyle("var"), $._simple_expression)),
-
-    pragma_block: $ => seq($._pragma, ":", field("body", $.statement_list)),
-
-    _pragma: $ =>
+    _routine_expression: $ =>
       seq(
-        "{.",
-        alias($.argument_list, $.pragma_list),
-        token(choice(".}", "}"))
+        "(",
+        optional(field("parameters", $.parameter_list)),
+        ")",
+        optional(seq(":", field("return_type", $._simple_expression))),
+        optional(field("pragma", $._pragma)),
+        optional(seq("=", field("body", $.statement_list)))
       ),
 
     try: $ =>
@@ -663,6 +667,62 @@ module.exports = grammar({
         optional(field("label", $._simple_expression)),
         ":",
         field("body", $.statement_list)
+      ),
+
+    _simple_expression: $ =>
+      choice(
+        $._literals,
+        $.accent_quoted,
+        $.binary_expression,
+        $.bracket_expression,
+        alias($._simple_call_expression, $.call),
+        $.curly_expression,
+        $.dot_expression,
+        $.parenthesized_expression,
+        $.tuple,
+        $.tuple_type,
+        $.object_type,
+        $.distinct_type,
+        $.pointer_type,
+        $.ref_type,
+        $.var_type,
+        $.unary_expression,
+        $.identifier
+      ),
+
+    tuple_type: $ =>
+      prec.right(
+        seq(
+          ignoreStyle("tuple"),
+          optional(
+            seq(
+              "[",
+              sep1(
+                alias($.variable_declaration, $.field_declaration),
+                token(choice(",", ";"))
+              ),
+              "]"
+            )
+          )
+        )
+      ),
+
+    object_type: _ => ignoreStyle("object"),
+
+    distinct_type: $ =>
+      prec.right(seq(ignoreStyle("distinct"), $._simple_expression)),
+    pointer_type: $ =>
+      prec.right(seq(ignoreStyle("ptr"), $._simple_expression)),
+    ref_type: $ => prec.right(seq(ignoreStyle("ref"), $._simple_expression)),
+    var_type: $ => prec.right(seq(ignoreStyle("var"), $._simple_expression)),
+
+    pragma_block: $ => seq($._pragma, ":", field("body", $.statement_list)),
+
+    _pragma: $ =>
+      seq(
+        "{.",
+        alias($.argument_list, $.pragma_list),
+        token(choice(".}", "}"))
       ),
 
     _simple_call_expression: $ =>

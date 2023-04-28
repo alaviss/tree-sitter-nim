@@ -692,3 +692,126 @@ type
               left: (identifier)
               right: (argument_list
                 (identifier)))))))))
+
+================================================================================
+Routine declarations
+================================================================================
+
+proc foo(): int =
+  discard
+
+proc imported() {.importc.}
+
+template optMul{`*`(a, 2)}(a: int): int = a+a
+
+macro that(this): untyped = discard
+
+method exists(x: RootObj) {.base.} = echo "doesn't"
+
+iterator items(x: seq[int]): (int, int) =
+  for i in x:
+    yield (0, i)
+
+converter toInt(x: Natural): int =
+  int(x)
+
+proc bar
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (proc_declaration
+    name: (identifier)
+    return_type: (identifier)
+    body: (statement_list
+      (discard_statement)))
+  (proc_declaration
+    name: (identifier)
+    pragma: (pragma_list
+      (identifier)))
+  (template_declaration
+    name: (identifier)
+    rewrite_pattern: (term_rewriting_pattern
+      (call
+        function: (accent_quoted
+          (identifier))
+        arguments: (argument_list
+          (identifier)
+          (integer_literal))))
+    parameters: (parameter_list
+      (parameter_declaration
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        type: (identifier)))
+    return_type: (identifier)
+    body: (statement_list
+      (binary_expression
+        left: (identifier)
+        right: (identifier))))
+  (macro_declaration
+    name: (identifier)
+    parameters: (parameter_list
+      (parameter_declaration
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))))
+    return_type: (identifier)
+    body: (statement_list
+      (discard_statement)))
+  (method_declaration
+    name: (identifier)
+    parameters: (parameter_list
+      (parameter_declaration
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        type: (identifier)))
+    pragma: (pragma_list
+      (identifier))
+    body: (statement_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (string_literal)))))
+  (iterator_declaration
+    name: (identifier)
+    parameters: (parameter_list
+      (parameter_declaration
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        type: (bracket_expression
+          left: (identifier)
+          right: (argument_list
+            (identifier)))))
+    return_type: (tuple
+      (identifier)
+      (identifier))
+    body: (statement_list
+      (for
+        left: (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        right: (identifier)
+        body: (statement_list
+          (yield_statement
+            (tuple
+              (integer_literal)
+              (identifier)))))))
+  (converter_declaration
+    name: (identifier)
+    parameters: (parameter_list
+      (parameter_declaration
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier)))
+        type: (identifier)))
+    return_type: (identifier)
+    body: (statement_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (identifier)))))
+  (proc_declaration
+    name: (identifier)))
