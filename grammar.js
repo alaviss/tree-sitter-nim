@@ -164,13 +164,13 @@ module.exports = grammar({
     variable_declaration: $ =>
       prec.right(
         seq(
-          $._symbol_declaration_list,
+          $.symbol_declaration_list,
           optional(seq(":", field("type", $._simple_expression))),
           optional(seq("=", field("value", $._expression)))
         )
       ),
 
-    _symbol_declaration_list: $ =>
+    symbol_declaration_list: $ =>
       sep1(choice($.symbol_declaration, $.tuple_deconstruct_declaration), ","),
 
     tuple_deconstruct_declaration: $ =>

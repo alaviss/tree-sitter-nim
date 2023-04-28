@@ -31,83 +31,93 @@ const Test* {.importc: "TEST".}: int
 (source_file
   (const_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       value: (integer_literal)))
   (const_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       type: (identifier)
       value: (integer_literal)))
   (const_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       value: (integer_literal))
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       type: (identifier)
       value: (integer_literal)))
   (const_section
     (variable_declaration
-      (tuple_deconstruct_declaration
-        (symbol_declaration
-          name: (identifier))
-        (symbol_declaration
-          name: (identifier)))
-      value: (tuple
-        (integer_literal)
-        (integer_literal))))
-  (const_section
-    (variable_declaration
-      (symbol_declaration
-        name: (identifier))
-      value: (integer_literal))
-    (variable_declaration
-      (tuple_deconstruct_declaration
-        (symbol_declaration
-          name: (identifier))
-        (symbol_declaration
-          name: (identifier))
-        (symbol_declaration
-          name: (identifier)))
-      value: (tuple
-        (integer_literal)
-        (integer_literal)
-        (integer_literal))))
-  (const_section
-    (variable_declaration
-      (tuple_deconstruct_declaration
-        (symbol_declaration
-          name: (identifier))
-        (symbol_declaration
-          (exported_symbol
+      (symbol_declaration_list
+        (tuple_deconstruct_declaration
+          (symbol_declaration
+            name: (identifier))
+          (symbol_declaration
             name: (identifier))))
       value: (tuple
         (integer_literal)
         (integer_literal))))
   (const_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
-      (symbol_declaration
-        (exported_symbol
+      (symbol_declaration_list
+        (symbol_declaration
           name: (identifier)))
-      (symbol_declaration
-        name: (identifier))
+      value: (integer_literal))
+    (variable_declaration
+      (symbol_declaration_list
+        (tuple_deconstruct_declaration
+          (symbol_declaration
+            name: (identifier))
+          (symbol_declaration
+            name: (identifier))
+          (symbol_declaration
+            name: (identifier))))
+      value: (tuple
+        (integer_literal)
+        (integer_literal)
+        (integer_literal))))
+  (const_section
+    (variable_declaration
+      (symbol_declaration_list
+        (tuple_deconstruct_declaration
+          (symbol_declaration
+            name: (identifier))
+          (symbol_declaration
+            (exported_symbol
+              name: (identifier)))))
+      value: (tuple
+        (integer_literal)
+        (integer_literal))))
+  (const_section
+    (variable_declaration
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          (exported_symbol
+            name: (identifier)))
+        (symbol_declaration
+          name: (identifier)))
       value: (integer_literal)))
   (const_section
     (variable_declaration
-      (symbol_declaration
-        (exported_symbol
-          name: (identifier))
-        pragma: (pragma
-          (pragma_list
-            (colon_expression
-              left: (identifier)
-              right: (string_literal)))))
+      (symbol_declaration_list
+        (symbol_declaration
+          (exported_symbol
+            name: (identifier))
+          pragma: (pragma
+            (pragma_list
+              (colon_expression
+                left: (identifier)
+                right: (string_literal))))))
       type: (identifier))))
 
 ================================================================================
@@ -127,37 +137,42 @@ l_e_t
 (source_file
   (let_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
-      (symbol_declaration
-        name: (identifier))
-      value: (float_literal)))
-  (let_section
-    (variable_declaration
-      (symbol_declaration
-        name: (identifier))
-      type: (identifier)
-      value: (float_literal)))
-  (let_section
-    (variable_declaration
-      (symbol_declaration
-        name: (identifier))
-      (symbol_declaration
-        name: (identifier))
-      (symbol_declaration
-        name: (identifier))
-      value: (integer_literal))
-    (variable_declaration
-      (symbol_declaration
-        name: (identifier))
-      type: (identifier)
-      value: (integer_literal))
-    (variable_declaration
-      (tuple_deconstruct_declaration
+      (symbol_declaration_list
         (symbol_declaration
           name: (identifier))
         (symbol_declaration
           name: (identifier)))
+      value: (float_literal)))
+  (let_section
+    (variable_declaration
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
+      type: (identifier)
+      value: (float_literal)))
+  (let_section
+    (variable_declaration
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          name: (identifier)))
+      value: (integer_literal))
+    (variable_declaration
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
+      type: (identifier)
+      value: (integer_literal))
+    (variable_declaration
+      (symbol_declaration_list
+        (tuple_deconstruct_declaration
+          (symbol_declaration
+            name: (identifier))
+          (symbol_declaration
+            name: (identifier))))
       value: (tuple
         (integer_literal)
         (integer_literal)))))
@@ -183,46 +198,53 @@ var (c, d) = (2, 3)
 (source_file
   (var_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       value: (float_literal)))
   (var_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       type: (identifier)
       value: (float_literal)))
   (var_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       value: (integer_literal))
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       type: (identifier)
       value: (integer_literal)))
   (var_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
-      (symbol_declaration
-        name: (identifier))
-      type: (identifier)))
-  (var_section
-    (variable_declaration
-      (symbol_declaration
-        name: (identifier))
-      (symbol_declaration
-        name: (identifier))
-      type: (identifier)))
-  (var_section
-    (variable_declaration
-      (tuple_deconstruct_declaration
+      (symbol_declaration_list
         (symbol_declaration
           name: (identifier))
         (symbol_declaration
           name: (identifier)))
+      type: (identifier)))
+  (var_section
+    (variable_declaration
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          name: (identifier)))
+      type: (identifier)))
+  (var_section
+    (variable_declaration
+      (symbol_declaration_list
+        (tuple_deconstruct_declaration
+          (symbol_declaration
+            name: (identifier))
+          (symbol_declaration
+            name: (identifier))))
       value: (tuple
         (integer_literal)
         (integer_literal)))))

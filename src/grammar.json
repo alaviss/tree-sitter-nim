@@ -491,7 +491,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_symbol_declaration_list"
+            "name": "symbol_declaration_list"
           },
           {
             "type": "CHOICE",
@@ -546,7 +546,7 @@
         ]
       }
     },
-    "_symbol_declaration_list": {
+    "symbol_declaration_list": {
       "type": "SEQ",
       "members": [
         {

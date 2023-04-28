@@ -487,8 +487,9 @@ let y = block:
     body: (statement_list
       (let_section
         (variable_declaration
-          (symbol_declaration
-            name: (identifier))
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier)))
           value: (integer_literal)))
       (call
         function: (identifier)
@@ -496,8 +497,9 @@ let y = block:
           (integer_literal)))))
   (let_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       value: (block
         body: (statement_list
           (integer_literal))))))
@@ -575,8 +577,9 @@ else: expr2
         (integer_literal))))
   (let_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       value: (if
         condition: (boolean_literal)
         consequence: (statement_list
@@ -592,8 +595,9 @@ else: expr2
     body: (statement_list
       (var_section
         (variable_declaration
-          (symbol_declaration
-            name: (identifier))
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier)))
           value: (if
             condition: (boolean_literal)
             consequence: (statement_list
@@ -686,8 +690,9 @@ else: expr2
         (integer_literal))))
   (const_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       value: (when
         condition: (boolean_literal)
         consequence: (statement_list
@@ -703,8 +708,9 @@ else: expr2
     body: (statement_list
       (const_section
         (variable_declaration
-          (symbol_declaration
-            name: (identifier))
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier)))
           value: (when
             condition: (boolean_literal)
             consequence: (statement_list
@@ -832,8 +838,9 @@ let x = case something(10)
         (integer_literal))))
   (let_section
     (variable_declaration
-      (symbol_declaration
-        name: (identifier))
+      (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
       value: (case
         value: (call
           function: (identifier)

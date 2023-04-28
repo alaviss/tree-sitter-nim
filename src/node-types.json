@@ -937,6 +937,25 @@
     }
   },
   {
+    "type": "symbol_declaration_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "symbol_declaration",
+          "named": true
+        },
+        {
+          "type": "tuple_deconstruct_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "try",
     "named": true,
     "fields": {
@@ -1057,15 +1076,11 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
-          "type": "symbol_declaration",
-          "named": true
-        },
-        {
-          "type": "tuple_deconstruct_declaration",
+          "type": "symbol_declaration_list",
           "named": true
         }
       ]
