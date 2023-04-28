@@ -12,19 +12,25 @@ for (x, y), w, z in whatever:
   for foo, bar in s:
     0x42f
 
+for _, v {.tag.} in c.pairs:
+  discard
+
 --------------------------------------------------------------------------------
 
 (source_file
   (for
-    left: (pattern_list
-      (identifier))
+    left: (symbol_declaration_list
+      (symbol_declaration
+        name: (identifier)))
     right: (identifier)
     body: (statement_list
       (integer_literal)))
   (for
-    left: (pattern_list
-      (identifier)
-      (identifier))
+    left: (symbol_declaration_list
+      (symbol_declaration
+        name: (identifier))
+      (symbol_declaration
+        name: (identifier)))
     right: (call
       function: (identifier)
       arguments: (argument_list
@@ -32,21 +38,40 @@ for (x, y), w, z in whatever:
     body: (statement_list
       (integer_literal)))
   (for
-    left: (pattern_list
-      (tuple_pattern
-        (identifier)
-        (identifier))
-      (identifier)
-      (identifier))
+    left: (symbol_declaration_list
+      (tuple_deconstruct_declaration
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          name: (identifier)))
+      (symbol_declaration
+        name: (identifier))
+      (symbol_declaration
+        name: (identifier)))
     right: (identifier)
     body: (statement_list
       (for
-        left: (pattern_list
-          (identifier)
-          (identifier))
+        left: (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier))
+          (symbol_declaration
+            name: (identifier)))
         right: (identifier)
         body: (statement_list
-          (integer_literal))))))
+          (integer_literal)))))
+  (for
+    left: (symbol_declaration_list
+      (symbol_declaration
+        name: (blank_identifier))
+      (symbol_declaration
+        name: (identifier)
+        pragma: (pragma_list
+          (identifier))))
+    right: (dot_expression
+      left: (identifier)
+      right: (identifier))
+    body: (statement_list
+      (discard_statement))))
 
 ================================================================================
 While statements

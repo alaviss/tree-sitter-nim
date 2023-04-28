@@ -226,6 +226,10 @@
         "named": true
       },
       {
+        "type": "for",
+        "named": true
+      },
+      {
         "type": "let_section",
         "named": true
       },
@@ -366,6 +370,10 @@
       "types": [
         {
           "type": "accent_quoted",
+          "named": true
+        },
+        {
+          "type": "blank_identifier",
           "named": true
         },
         {
@@ -959,6 +967,10 @@
             "named": true
           },
           {
+            "type": "blank_identifier",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           }
@@ -1067,6 +1079,42 @@
     "type": "float_literal",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "for",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      },
+      "left": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "symbol_declaration_list",
+            "named": true
+          }
+        ]
+      },
+      "right": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_simple_expression",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "generalized_string_literal",
@@ -1267,6 +1315,10 @@
           "named": true
         },
         {
+          "type": "blank_identifier",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -1401,6 +1453,10 @@
           "named": true
         },
         {
+          "type": "blank_identifier",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -1452,6 +1508,10 @@
       "types": [
         {
           "type": "accent_quoted",
+          "named": true
+        },
+        {
+          "type": "blank_identifier",
           "named": true
         },
         {
@@ -1557,6 +1617,10 @@
             "named": true
           },
           {
+            "type": "blank_identifier",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           }
@@ -1578,6 +1642,10 @@
         "types": [
           {
             "type": "accent_quoted",
+            "named": true
+          },
+          {
+            "type": "blank_identifier",
             "named": true
           },
           {
@@ -1613,6 +1681,10 @@
       "types": [
         {
           "type": "accent_quoted",
+          "named": true
+        },
+        {
+          "type": "blank_identifier",
           "named": true
         },
         {
@@ -1704,6 +1776,10 @@
           "named": true
         },
         {
+          "type": "blank_identifier",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         }
@@ -1735,6 +1811,10 @@
         "types": [
           {
             "type": "accent_quoted",
+            "named": true
+          },
+          {
+            "type": "blank_identifier",
             "named": true
           },
           {
@@ -1907,6 +1987,10 @@
           "named": true
         },
         {
+          "type": "blank_identifier",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         }
@@ -1938,6 +2022,10 @@
         "types": [
           {
             "type": "accent_quoted",
+            "named": true
+          },
+          {
+            "type": "blank_identifier",
             "named": true
           },
           {
@@ -2002,6 +2090,10 @@
       "types": [
         {
           "type": "accent_quoted",
+          "named": true
+        },
+        {
+          "type": "blank_identifier",
           "named": true
         },
         {
@@ -2185,7 +2277,7 @@
         "required": true,
         "types": [
           {
-            "type": "_expression",
+            "type": "_simple_expression",
             "named": true
           }
         ]
@@ -2266,6 +2358,10 @@
   {
     "type": "`",
     "named": false
+  },
+  {
+    "type": "blank_identifier",
+    "named": true
   },
   {
     "type": "boolean_literal",

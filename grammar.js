@@ -141,7 +141,8 @@ module.exports = grammar({
         $._simple_statement,
         $.bind_statement,
         $.mixin_statement,
-        $.while
+        $.while,
+        $.for
       ),
 
     bind_statement: $ =>
@@ -169,7 +170,17 @@ module.exports = grammar({
     while: $ =>
       seq(
         ignoreStyle("while"),
-        field("condition", $._expression),
+        field("condition", $._simple_expression),
+        ":",
+        field("body", $.statement_list)
+      ),
+
+    for: $ =>
+      seq(
+        ignoreStyle("for"),
+        field("left", $.symbol_declaration_list),
+        ignoreStyle("in"),
+        field("right", $._simple_expression),
         ":",
         field("body", $.statement_list)
       ),
@@ -512,7 +523,8 @@ module.exports = grammar({
 
     exported_symbol: $ => seq(field("name", $._symbol), "*"),
 
-    _symbol: $ => seq(choice($.identifier, $.accent_quoted)),
+    _symbol: $ =>
+      seq(choice($.identifier, $.accent_quoted, $.blank_identifier)),
 
     // Any expression that doesn't contain a _terminator
     _simple_expression: $ =>
@@ -1071,6 +1083,8 @@ module.exports = grammar({
 
     accent_quoted: $ =>
       seq("`", repeat1(alias(/[^\x00-\x1f\r\n\t` ]+/, $.identifier)), "`"),
+
+    blank_identifier: _ => "_",
 
     identifier: _ => token(Identifier),
   },
