@@ -111,6 +111,10 @@ module.exports = grammar({
     [$._command_expression, $.binary_expression],
     [$._command_expression, $.unary_expression, $.binary_expression],
   ],
+  precedences: $ => [
+    [$._symbol, $._simple_expression], // break conflict between var type and var section
+    [$.object_declaration, $.object_type],
+  ],
 
   rules: {
     source_file: $ =>
@@ -184,28 +188,43 @@ module.exports = grammar({
 
     _type_definition: $ =>
       choice(
-        $.distinct_declaration,
-        $.object_declaration,
-        $.pointer_declaration,
-        $.ref_declaration
+        $._simple_expression,
+        $._object_like_declaration,
+        alias($._distinct_declaration, $.distinct_type),
+        alias($._pointer_declaration, $.pointer_type),
+        alias($._ref_declaration, $.ref_type)
       ),
 
-    distinct_declaration: $ =>
-      seq(ignoreStyle("distinct"), choice($.object_declaration)),
+    _object_like_declaration: $ =>
+      choice($.object_declaration, alias($._tuple_declaration, $.tuple_type)),
 
-    pointer_declaration: $ =>
-      seq(ignoreStyle("ptr"), choice($.object_declaration)),
+    _distinct_declaration: $ =>
+      seq(ignoreStyle("distinct"), choice($._object_like_declaration)),
 
-    ref_declaration: $ => seq(ignoreStyle("ref"), choice($.object_declaration)),
+    _pointer_declaration: $ =>
+      seq(ignoreStyle("ptr"), choice($._object_like_declaration)),
+
+    _ref_declaration: $ =>
+      seq(ignoreStyle("ref"), choice($._object_like_declaration)),
 
     object_declaration: $ =>
       seq(
         ignoreStyle("object"),
-        seqReq1(
-          field("pragma", $._pragma),
-          seq(ignoreStyle("of"), field("inherits", $._simple_expression)),
-          $.field_declaration_list
-        )
+        optional(field("pragma", $._pragma)),
+        optional(
+          seq(ignoreStyle("of"), field("inherits", $._simple_expression))
+        ),
+        optional($.field_declaration_list)
+      ),
+
+    _tuple_declaration: $ =>
+      seq(
+        ignoreStyle("tuple"),
+        $._layout_start,
+        repeat1(
+          seq($._line, alias($.variable_declaration, $.field_declaration))
+        ),
+        $._layout_end
       ),
 
     field_declaration_list: $ =>
@@ -353,6 +372,12 @@ module.exports = grammar({
         $.dot_expression,
         $.parenthesized_expression,
         $.tuple,
+        $.tuple_type,
+        $.object_type,
+        $.distinct_type,
+        $.pointer_type,
+        $.ref_type,
+        $.var_type,
         $.unary_expression,
         $.identifier
       ),
@@ -368,6 +393,32 @@ module.exports = grammar({
         $.try,
         $.when
       ),
+
+    tuple_type: $ =>
+      prec.right(
+        seq(
+          ignoreStyle("tuple"),
+          optional(
+            seq(
+              "[",
+              sep1(
+                alias($.variable_declaration, $.field_declaration),
+                token(choice(",", ";"))
+              ),
+              "]"
+            )
+          )
+        )
+      ),
+
+    object_type: _ => ignoreStyle("object"),
+
+    distinct_type: $ =>
+      prec.right(seq(ignoreStyle("distinct"), $._simple_expression)),
+    pointer_type: $ =>
+      prec.right(seq(ignoreStyle("ptr"), $._simple_expression)),
+    ref_type: $ => prec.right(seq(ignoreStyle("ref"), $._simple_expression)),
+    var_type: $ => prec.right(seq(ignoreStyle("var"), $._simple_expression)),
 
     pragma_block: $ => seq($._pragma, ":", field("body", $.statement_list)),
 

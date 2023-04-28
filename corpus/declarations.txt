@@ -249,84 +249,38 @@ var (c, d) = (2, 3)
         (integer_literal)))))
 
 ================================================================================
-Type declarations
+Type aliases
 ================================================================================
 
 type X = int
 type
   Y = distinct int
-  Z = tuple[x, y: int]
-  W = tuple
-    x: int
-    y: int
-
-type A = ref object
-
-type
-  C = object
-  D = ref object
+  A[T] = ref T
 
 --------------------------------------------------------------------------------
 
 (source_file
   (type_section
     (type_declaration
-      name: (identifier)
-      type: (type_identifier)))
+      (type_symbol_declaration
+        name: (identifier))
+      (identifier)))
   (type_section
     (type_declaration
-      name: (identifier)
-      type: (distinct_type
-        (type_identifier)))
+      (type_symbol_declaration
+        name: (identifier))
+      (distinct_type
+        (identifier)))
     (type_declaration
-      name: (identifier)
-      type: (tuple_type
-        (field_declaration_list
-          (field_declaration
-            name: (identifier)
-            name: (identifier)
-            type: (type_identifier)))))
-    (type_declaration
-      name: (identifier)
-      type: (tuple_type
-        (field_declaration_list
-          (field_declaration
-            name: (identifier)
-            type: (type_identifier))
-          (field_declaration
-            name: (identifier)
-            type: (type_identifier))))))
-  (type_section
-    (type_declaration
-      name: (identifier)
-      type: (ref_type
-        (object_type))))
-  (type_section
-    (type_declaration
-      name: (identifier)
-      type: (ref_type
-        (object_type
-          (field_declaration_list
-            (field_declaration
-              (exported_symbol
-                name: (identifier))
-              (exported_symbol
-                name: (identifier))
-              name: (identifier)
-              type: (type_identifier))
-            (field_declaration
-              name: (identifier)
-              name: (identifier)
-              name: (identifier)
-              type: (type_identifier)))))))
-  (type_section
-    (type_declaration
-      name: (identifier)
-      type: (object_type))
-    (type_declaration
-      name: (identifier)
-      type: (ref_type
-        (object_type)))))
+      (type_symbol_declaration
+        name: (identifier)
+        (generic_parameter_list
+          (parameter_declaration
+            (symbol_declaration_list
+              (symbol_declaration
+                name: (identifier))))))
+      (ref_type
+        (identifier)))))
 
 ================================================================================
 Object declarations
@@ -362,6 +316,10 @@ type
   Person* {.ro, tableName: "PERSON".} = ref object of Model
     name* {.unique.}: string
     pet* {.onDelete: "CASCADE".}: Option[Pet]
+
+type
+  C = object
+  D = ref object
 
 --------------------------------------------------------------------------------
 
@@ -463,7 +421,7 @@ type
     (type_declaration
       (type_symbol_declaration
         name: (identifier))
-      (ref_declaration
+      (ref_type
         (object_declaration
           (field_declaration_list
             (field_declaration
@@ -495,7 +453,7 @@ type
           (colon_expression
             left: (identifier)
             right: (string_literal))))
-      (ref_declaration
+      (ref_type
         (object_declaration
           inherits: (identifier)
           (field_declaration_list
@@ -519,4 +477,60 @@ type
               type: (bracket_expression
                 left: (identifier)
                 right: (argument_list
-                  (identifier))))))))))
+                  (identifier)))))))))
+  (type_section
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (object_declaration))
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (ref_type
+        (object_declaration)))))
+
+================================================================================
+Tuple declarations
+================================================================================
+
+type
+  Z = tuple[x, y: int]
+  W = tuple
+    x: int
+    y: int
+
+  V = tuple
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (type_section
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (tuple_type
+        (field_declaration
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier))
+            (symbol_declaration
+              name: (identifier)))
+          type: (identifier))))
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (tuple_type
+        (field_declaration
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier)))
+          type: (identifier))
+        (field_declaration
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier)))
+          type: (identifier))))
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (tuple_type))))

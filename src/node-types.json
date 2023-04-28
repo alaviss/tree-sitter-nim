@@ -74,6 +74,10 @@
         "named": true
       },
       {
+        "type": "distinct_type",
+        "named": true
+      },
+      {
         "type": "dot_expression",
         "named": true
       },
@@ -98,7 +102,19 @@
         "named": true
       },
       {
+        "type": "object_type",
+        "named": true
+      },
+      {
         "type": "parenthesized_expression",
+        "named": true
+      },
+      {
+        "type": "pointer_type",
+        "named": true
+      },
+      {
+        "type": "ref_type",
         "named": true
       },
       {
@@ -110,7 +126,15 @@
         "named": true
       },
       {
+        "type": "tuple_type",
+        "named": true
+      },
+      {
         "type": "unary_expression",
+        "named": true
+      },
+      {
+        "type": "var_type",
         "named": true
       }
     ]
@@ -536,13 +560,17 @@
     }
   },
   {
-    "type": "distinct_declaration",
+    "type": "distinct_type",
     "named": true,
     "fields": {},
     "children": {
       "multiple": false,
       "required": true,
       "types": [
+        {
+          "type": "_simple_expression",
+          "named": true
+        },
         {
           "type": "object_declaration",
           "named": true
@@ -942,6 +970,11 @@
     }
   },
   {
+    "type": "object_type",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "of_branch",
     "named": true,
     "fields": {
@@ -1023,13 +1056,17 @@
     }
   },
   {
-    "type": "pointer_declaration",
+    "type": "pointer_type",
     "named": true,
     "fields": {},
     "children": {
       "multiple": false,
       "required": true,
       "types": [
+        {
+          "type": "_simple_expression",
+          "named": true
+        },
         {
           "type": "object_declaration",
           "named": true
@@ -1102,13 +1139,17 @@
     }
   },
   {
-    "type": "ref_declaration",
+    "type": "ref_type",
     "named": true,
     "fields": {},
     "children": {
       "multiple": false,
       "required": true,
       "types": [
+        {
+          "type": "_simple_expression",
+          "named": true
+        },
         {
           "type": "object_declaration",
           "named": true
@@ -1279,6 +1320,21 @@
     }
   },
   {
+    "type": "tuple_type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "field_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "type_declaration",
     "named": true,
     "fields": {},
@@ -1287,19 +1343,11 @@
       "required": true,
       "types": [
         {
-          "type": "distinct_declaration",
+          "type": "_simple_expression",
           "named": true
         },
         {
           "type": "object_declaration",
-          "named": true
-        },
-        {
-          "type": "pointer_declaration",
-          "named": true
-        },
-        {
-          "type": "ref_declaration",
           "named": true
         },
         {
@@ -1398,6 +1446,21 @@
       "types": [
         {
           "type": "variable_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "var_type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "_simple_expression",
           "named": true
         }
       ]
