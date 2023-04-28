@@ -130,7 +130,11 @@ module.exports = grammar({
     _simple_statement: $ =>
       prec(
         -1,
-        choice($._simple_expression, alias($._command_call, $.call), $.pragma)
+        choice(
+          $._simple_expression,
+          alias($._command_call, $.call),
+          alias($._pragma, $.pragma)
+        )
       ),
 
     // Any statement
@@ -142,7 +146,156 @@ module.exports = grammar({
         $._simple_statement
       ),
 
-    _declaration: $ => choice($.const_section, $.let_section, $.var_section),
+    _declaration: $ =>
+      choice($.const_section, $.let_section, $.type_section, $.var_section),
+
+    type_section: $ =>
+      seq(
+        ignoreStyle("type"),
+        choice(
+          $.type_declaration,
+          seq(
+            $._layout_start,
+            repeat1(seq($._line, $.type_declaration)),
+            $._layout_end
+          )
+        )
+      ),
+
+    type_declaration: $ =>
+      seq($.type_symbol_declaration, "=", $._type_definition),
+
+    type_symbol_declaration: $ =>
+      prec.right(
+        seq(
+          $._maybe_exported_symbol,
+          optional(
+            seq("[", alias($.parameter_list, $.generic_parameter_list), "]")
+          ),
+          optional(field("pragma", $._pragma))
+        )
+      ),
+
+    parameter_list: $ =>
+      sep1(
+        alias($.variable_declaration, $.parameter_declaration),
+        token(choice(",", ";"))
+      ),
+
+    _type_definition: $ =>
+      choice(
+        $.distinct_declaration,
+        $.object_declaration,
+        $.pointer_declaration,
+        $.ref_declaration
+      ),
+
+    distinct_declaration: $ =>
+      seq(ignoreStyle("distinct"), choice($.object_declaration)),
+
+    pointer_declaration: $ =>
+      seq(ignoreStyle("ptr"), choice($.object_declaration)),
+
+    ref_declaration: $ => seq(ignoreStyle("ref"), choice($.object_declaration)),
+
+    object_declaration: $ =>
+      seq(
+        ignoreStyle("object"),
+        seqReq1(
+          field("pragma", $._pragma),
+          seq(ignoreStyle("of"), field("inherits", $._simple_expression)),
+          $.field_declaration_list
+        )
+      ),
+
+    field_declaration_list: $ =>
+      seq(
+        $._layout_start,
+        repeat1(seq($._line, $._object_field_declaration)),
+        $._layout_end
+      ),
+
+    _object_field_declaration: $ =>
+      choice(
+        alias($.variable_declaration, $.field_declaration),
+        $.conditional_declaration,
+        $.variant_declaration,
+        $.nil_literal
+      ),
+
+    conditional_declaration: $ =>
+      prec.right(
+        seq(
+          ignoreStyle("when"),
+          field("condition", $._simple_expression),
+          ":",
+          field("consequence", $.field_declaration_list),
+          repeat(
+            field(
+              "alternative",
+              seq(
+                optional($._line_elif),
+                alias($._object_elif_branch, $.elif_branch)
+              )
+            )
+          ),
+          optional(
+            field(
+              "alternative",
+              seq(
+                optional($._line_else),
+                alias($._variant_else_branch, $.else_branch)
+              )
+            )
+          )
+        )
+      ),
+
+    _object_elif_branch: $ =>
+      seq(
+        ignoreStyle("elif"),
+        field("condition", $._simple_expression),
+        ":",
+        field("consequence", $.field_declaration_list)
+      ),
+
+    variant_declaration: $ =>
+      seq(
+        ignoreStyle("case"),
+        $.variant_descriminator_declaration,
+        optional(":"),
+        choice(
+          $._variant_body,
+          seq($._layout_start, $._variant_body, $._layout_end)
+        )
+      ),
+
+    _variant_body: $ =>
+      seqReq1(
+        repeat1(seq($._line_of, alias($._variant_of_branch, $.of_branch))),
+        seq($._line_else, alias($._variant_else_branch, $.else_branch))
+      ),
+
+    _variant_of_branch: $ =>
+      seq(
+        ignoreStyle("of"),
+        field("values", $.expression_list),
+        ":",
+        $.field_declaration_list
+      ),
+
+    _variant_else_branch: $ =>
+      seq(ignoreStyle("else"), ":", $.field_declaration_list),
+
+    variant_descriminator_declaration: $ =>
+      prec.left(
+        seq(
+          $.symbol_declaration,
+          ":",
+          field("type", $._simple_expression),
+          optional(":")
+        )
+      ),
 
     const_section: $ =>
       seq(ignoreStyle("const"), $._variable_declaration_section),
@@ -178,7 +331,7 @@ module.exports = grammar({
 
     symbol_declaration: $ =>
       prec.right(
-        seq($._maybe_exported_symbol, optional(field("pragma", $.pragma)))
+        seq($._maybe_exported_symbol, optional(field("pragma", $._pragma)))
       ),
 
     _maybe_exported_symbol: $ =>
@@ -216,9 +369,9 @@ module.exports = grammar({
         $.when
       ),
 
-    pragma_block: $ => seq($.pragma, ":", field("body", $.statement_list)),
+    pragma_block: $ => seq($._pragma, ":", field("body", $.statement_list)),
 
-    pragma: $ =>
+    _pragma: $ =>
       seq(
         "{.",
         alias($.argument_list, $.pragma_list),
