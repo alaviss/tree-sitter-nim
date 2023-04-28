@@ -133,25 +133,125 @@ module.exports = grammar({
         $._layout_end
       ),
 
-    // Any statement that doesn't contain a _terminator
+    _statement: $ =>
+      choice(
+        $._expression,
+        $._declaration,
+        alias($._command_call_block, $.call),
+        $._simple_statement,
+        $.bind_statement,
+        $.mixin_statement
+      ),
+
+    bind_statement: $ =>
+      seq(
+        ignoreStyle("bind"),
+        sep1(choice($._symbol, $.qualified_symbol), ",")
+      ),
+
+    mixin_statement: $ =>
+      seq(
+        ignoreStyle("mixin"),
+        sep1(choice($._symbol, $.qualified_symbol), ",")
+      ),
+
+    qualified_symbol: $ =>
+      prec.left(
+        Precedence.Dot,
+        seq(
+          field("left", $._symbol),
+          field("operator", "."),
+          field("right", $._symbol)
+        )
+      ),
+
     _simple_statement: $ =>
       prec(
         -1,
         choice(
           $._simple_expression,
           alias($._command_call, $.call),
-          alias($._pragma, $.pragma)
+          alias($._pragma, $.pragma),
+          $.import_statement,
+          $.export_statement,
+          $.import_from_statement,
+          $.include_statement,
+          $.discard_statement,
+          $.assembly_statement,
+          $.break_statement,
+          $.continue_statement,
+          $.return_statement,
+          $.raise_statement,
+          $.yield_statement
         )
       ),
 
-    // Any statement
-    _statement: $ =>
-      choice(
-        $._expression,
-        $._declaration,
-        alias($._command_call_block, $.call),
-        $._simple_statement
+    import_statement: $ =>
+      prec.right(
+        seq(
+          ignoreStyle("import"),
+          $._simple_expression,
+          optional(
+            choice(
+              repeat1(seq(",", $._simple_expression)),
+              seq(
+                ignoreStyle("except"),
+                alias($.expression_list, $.import_exception_list)
+              )
+            )
+          )
+        )
       ),
+
+    export_statement: $ =>
+      prec.right(
+        seq(
+          ignoreStyle("export"),
+          $._simple_expression,
+          optional(
+            choice(
+              repeat1(seq(",", $._simple_expression)),
+              seq(
+                ignoreStyle("except"),
+                alias($.expression_list, $.export_exception_list)
+              )
+            )
+          )
+        )
+      ),
+
+    import_from_statement: $ =>
+      seq(
+        ignoreStyle("from"),
+        field("module", $._simple_expression),
+        ignoreStyle("import"),
+        alias($.expression_list, $.import_symbol_list)
+      ),
+
+    include_statement: $ =>
+      seq(ignoreStyle("include"), alias($.expression_list, "include files")),
+
+    discard_statement: $ =>
+      seq(ignoreStyle("discard"), optional($._expression)),
+
+    assembly_statement: $ =>
+      seq(
+        ignoreStyle("asm"),
+        optional(field("pragma", $._pragma)),
+        $.string_literal
+      ),
+
+    break_statement: $ =>
+      seq(ignoreStyle("break"), optional(field("label", $._expression))),
+
+    continue_statement: $ =>
+      seq(ignoreStyle("continue"), optional(field("label", $._expression))),
+
+    return_statement: $ => seq(ignoreStyle("return"), optional($._expression)),
+
+    raise_statement: $ => seq(ignoreStyle("raise"), optional($._expression)),
+
+    yield_statement: $ => seq(ignoreStyle("yield"), optional($._expression)),
 
     _declaration: $ =>
       choice($.const_section, $.let_section, $.type_section, $.var_section),
@@ -276,7 +376,8 @@ module.exports = grammar({
         alias($.variable_declaration, $.field_declaration),
         $.conditional_declaration,
         $.variant_declaration,
-        $.nil_literal
+        $.nil_literal,
+        $.discard_statement
       ),
 
     conditional_declaration: $ =>
@@ -729,6 +830,8 @@ module.exports = grammar({
           $._wordop3,
           // Avoid precedence clashing with of_branch
           ignoreStyle("of"),
+          // Avoid precedence clashing with import_from
+          ignoreStyle("from"),
           ignoreStyle("not"),
         ].map(token => prec.left(unaryExp(token))),
         prec.left(
@@ -768,6 +871,7 @@ module.exports = grammar({
           [$._binop6, Precedence.Op6],
           [$._binop5, Precedence.Op5],
           [$._wordop5, Precedence.Op5],
+          [ignoreStyle("from"), Precedence.Op5],
           [ignoreStyle("of"), Precedence.Op5],
           [$._wordop4, Precedence.Op4],
           [$._wordop3, Precedence.Op3],
@@ -784,9 +888,7 @@ module.exports = grammar({
     _wordop9: _ =>
       token(choice(...["div", "mod", "shl", "shr"].map(ignoreStyle))),
     _wordop5: _ =>
-      token(
-        choice(...["in", "notin", "is", "isnot", "as", "from"].map(ignoreStyle))
-      ),
+      token(choice(...["in", "notin", "is", "isnot", "as"].map(ignoreStyle))),
     _wordop4: _ => ignoreStyle("and"),
     _wordop3: _ => token(choice(...["or", "xor"].map(ignoreStyle))),
 

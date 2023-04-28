@@ -293,6 +293,8 @@ type
 
   NimNodeObj = object
     case kind: NimNodeKind
+    of nnkError:
+      discard
     of nnkNone, nnkEmpty, nnkNilLit:
       nil
     of nnkCharLit..nnkUInt64Lit:
@@ -358,6 +360,11 @@ type
               (symbol_declaration
                 name: (identifier))
               type: (identifier))
+            (of_branch
+              values: (expression_list
+                (identifier))
+              (field_declaration_list
+                (discard_statement)))
             (of_branch
               values: (expression_list
                 (identifier)
