@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
+#include <cctype>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <ostream>
@@ -24,6 +26,7 @@ using namespace std;
 
 using IndentCount = uint8_t;
 constexpr auto InvalidIndent = numeric_limits<IndentCount>::max();
+constexpr auto BitsInByte = 8;
 
 enum class TokenType : TSSymbol {
   TokenTypeStart,
@@ -32,7 +35,12 @@ enum class TokenType : TSSymbol {
   LayoutStart,
   LayoutEnd,
   InvalidLayout,
-  Terminator,
+  Line,
+  LineElif,
+  LineElse,
+  LineExcept,
+  LineFinally,
+  LineOf,
   Colon,
   Equal,
   BinaryOpStart,
@@ -60,9 +68,12 @@ constexpr ValidSymbols make_valid_symbols(initializer_list<TokenType> syms)
   return result;
 }
 
+enum class Flag { NotLineStart, FlagLen };
+
 struct State {
   vector<uint8_t> layout_stack;
   uint8_t line_indent;
+  bitset<(size_t)Flag::FlagLen> flags;
 
   unsigned serialize(uint8_t* buffer)
   {
@@ -71,6 +82,9 @@ struct State {
     unsigned length = 0;
     constexpr unsigned max_length = TREE_SITTER_SERIALIZATION_BUFFER_SIZE;
     buffer[length++] = line_indent;
+    static_assert(
+        (int)Flag::FlagLen <= BitsInByte, "Flag set is bigger than expected!");
+    buffer[length++] = (uint8_t)flags.to_ulong();
     for (const auto indent : layout_stack) {
       // Terrible failure mode, but there isn't much to do here.
       if (length >= max_length) {
@@ -94,12 +108,22 @@ struct State {
 
     unsigned cursor = 0;
     line_indent = buffer[cursor++];
+    flags = buffer[cursor++];
     const auto stack_size = length - cursor;
     layout_stack.resize(stack_size);
     for (unsigned i = 0; i < stack_size; i++) {
       layout_stack.at(i) = buffer[cursor++];
     }
     // NOLINTEND(*-pointer-arithmetic)
+  }
+
+  void set_flag(Flag flag) { flags.set(static_cast<size_t>(flag)); }
+
+  void reset_flag(Flag flag) { flags.reset(static_cast<size_t>(flag)); }
+
+  bool test_flag(Flag flag) const
+  {
+    return flags.test(static_cast<size_t>(flag));
   }
 };
 
@@ -112,6 +136,7 @@ ostream& operator<<(ostream& stream, const State& state)
     stream << (int32_t)indent << " ";
   }
   stream << "]";
+  stream << ", flags: " << state.flags;
   return stream;
 }
 #endif
@@ -259,10 +284,10 @@ private:
     if ((ctx).counter() != last_count) return false; \
   } while (false)
 
-namespace binary_op {
-
 /// The maximum value of `char`. Useful for unicode testing.
-constexpr char MaxAsciiChar = numeric_limits<char>::max();
+constexpr char MaxAsciiChar = 0x7f;
+
+namespace binary_op {
 
 /// The set of all BinaryOps tokens.
 constexpr ValidSymbols BinaryOps = make_valid_symbols(
@@ -633,6 +658,81 @@ bool lex(Context& ctx)
 }
 }  // namespace comment
 
+namespace line {
+constexpr auto LineTokens = make_valid_symbols(
+    {TokenType::Line, TokenType::LineElif, TokenType::LineElse,
+     TokenType::LineOf, TokenType::LineExcept, TokenType::LineFinally});
+constexpr auto LineKeyword = make_valid_symbols(
+    {TokenType::LineElif, TokenType::LineElse, TokenType::LineOf,
+     TokenType::LineExcept, TokenType::LineFinally});
+
+string get_keyword(Context& ctx)
+{
+  string keyword;
+  if (ctx.lookahead() >= 'a' && ctx.lookahead() <= 'z') {
+    keyword.push_back(static_cast<char>(ctx.lookahead()));
+    ctx.advance();
+    while ((ctx.lookahead() >= 'a' && ctx.lookahead() <= 'z') ||
+           (ctx.lookahead() >= 'A' && ctx.lookahead() <= 'Z') ||
+           ctx.lookahead() == '_') {
+      if (ctx.lookahead() != '_') {
+        keyword.push_back(
+            static_cast<char>(tolower(static_cast<int>(ctx.lookahead()))));
+      }
+      ctx.advance();
+    }
+    // If there are non-keyword characters in the identifier, then this is not
+    // a keyword
+    if ((ctx.lookahead() >= '0' && ctx.lookahead() <= '9') ||
+        (ctx.lookahead() > MaxAsciiChar)) {
+      keyword.clear();
+    }
+  }
+
+  return keyword;
+}
+
+bool lex(Context& ctx)
+{
+  if (!ctx.any_valid(LineTokens)) {
+    return false;
+  }
+  ctx.mark_end();
+
+  if (ctx.any_valid(LineKeyword)) {
+    auto keyword = get_keyword(ctx);
+
+#ifdef TREE_SITTER_INTERNAL_BUILD
+    if (getenv("TREE_SITTER_DEBUG")) {
+      cerr << "lex_nim: keyword after line: " << keyword << '\n';
+    }
+#endif
+
+    if (keyword == "elif" && ctx.valid(TokenType::LineElif)) {
+      return ctx.finish(TokenType::LineElif);
+    }
+    if (keyword == "else" && ctx.valid(TokenType::LineElse)) {
+      return ctx.finish(TokenType::LineElse);
+    }
+    if (keyword == "of" && ctx.valid(TokenType::LineOf)) {
+      return ctx.finish(TokenType::LineOf);
+    }
+    if (keyword == "except" && ctx.valid(TokenType::LineExcept)) {
+      return ctx.finish(TokenType::LineExcept);
+    }
+    if (keyword == "finally" && ctx.valid(TokenType::LineFinally)) {
+      return ctx.finish(TokenType::LineFinally);
+    }
+  }
+
+  if (ctx.valid(TokenType::Line)) {
+    return ctx.finish(TokenType::Line);
+  }
+
+  return false;
+}
+}  // namespace line
+
 bool lex_long_string_quote(Context& ctx)
 {
   if (!ctx.valid(TokenType::LongStringQuote) || ctx.lookahead() != '"') {
@@ -697,10 +797,15 @@ bool lex_indent(Context& ctx)
     return ctx.finish(TokenType::InvalidLayout);
   }
 
+  if (!ctx.state().test_flag(Flag::NotLineStart)) {
+    ctx.state().set_flag(Flag::NotLineStart);
+    TRY_LEX(ctx, line::lex);
+  }
+
   return false;
 }
 
-bool lex_space_and_terminator(Context& ctx)
+void lex_space(Context& ctx)
 {
   bool found = false;
   uint8_t indent = 0;
@@ -733,13 +838,8 @@ bool lex_space_and_terminator(Context& ctx)
 end:
   if (found) {
     ctx.state().line_indent = indent;
-
-    if (ctx.valid(TokenType::Terminator)) {
-      return ctx.finish(TokenType::Terminator);
-    }
+    ctx.state().reset_flag(Flag::NotLineStart);
   }
-
-  return false;
 }
 
 }  // namespace
@@ -785,9 +885,7 @@ bool tree_sitter_nim_external_scanner_scan(
   TRY_LEX(ctx, lex_long_string_quote);
   TRY_LEXN(ctx, binary_op::lex, true);
 
-  if (lex_space_and_terminator(ctx)) {
-    return true;
-  }
+  lex_space(ctx);
 
   TRY_LEX(ctx, comment::lex);
   TRY_LEX(ctx, lex_indent);

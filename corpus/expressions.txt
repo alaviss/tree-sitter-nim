@@ -487,7 +487,8 @@ let y = block:
     body: (statement_list
       (let_section
         (variable_declaration
-          name: (identifier)
+          (symbol_declaration
+            name: (identifier))
           value: (integer_literal)))
       (call
         function: (identifier)
@@ -495,7 +496,8 @@ let y = block:
           (integer_literal)))))
   (let_section
     (variable_declaration
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
       value: (block
         body: (statement_list
           (integer_literal))))))
@@ -573,7 +575,8 @@ else: expr2
         (integer_literal))))
   (let_section
     (variable_declaration
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
       value: (if
         condition: (boolean_literal)
         consequence: (statement_list
@@ -583,18 +586,19 @@ else: expr2
           consequence: (statement_list
             (string_literal)))
         alternative: (else_branch
-          consequence: (statement_list
+          (statement_list
             (integer_literal))))))
   (block
     body: (statement_list
       (var_section
         (variable_declaration
-          name: (identifier)
+          (symbol_declaration
+            name: (identifier))
           value: (if
             condition: (boolean_literal)
             consequence: (statement_list
               (integer_literal))
-            alternative: (else_clause
+            alternative: (else_branch
               (statement_list
                 (float_literal))))))))
   (if
@@ -666,7 +670,7 @@ else: expr2
         condition: (identifier)
         consequence: (statement_list
           (string_literal))
-        alternative: (elif_clause
+        alternative: (elif_branch
           condition: (identifier)
           consequence: (statement_list
             (if
@@ -677,41 +681,43 @@ else: expr2
                   arguments: (argument_list
                     (identifier)))))
             (integer_literal)))))
-    alternative: (else_clause
-      body: (statement_list
+    alternative: (else_branch
+      (statement_list
         (integer_literal))))
   (const_section
     (variable_declaration
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
       value: (when
         condition: (boolean_literal)
         consequence: (statement_list
           (integer_literal))
-        alternative: (elif_clause
+        alternative: (elif_branch
           condition: (identifier)
           consequence: (statement_list
             (string_literal)))
-        alternative: (else_clause
-          body: (statement_list
+        alternative: (else_branch
+          (statement_list
             (integer_literal))))))
   (block
     body: (statement_list
       (const_section
         (variable_declaration
-          name: (identifier)
+          (symbol_declaration
+            name: (identifier))
           value: (when
             condition: (boolean_literal)
             consequence: (statement_list
               (integer_literal))
-            alternative: (else_clause
-              body: (statement_list
+            alternative: (else_branch
+              (statement_list
                 (float_literal))))))))
   (when
     condition: (boolean_literal)
     consequence: (statement_list
       (identifier))
-    alternative: (else_clause
-      body: (statement_list
+    alternative: (else_branch
+      (statement_list
         (identifier)))))
 
 ================================================================================
@@ -759,10 +765,11 @@ let x = case something(10)
   (case
     value: (identifier)
     (of_branch
-      value: (integer_literal)
-      value: (integer_literal)
-      value: (integer_literal)
-      body: (statement_list
+      values: (expression_list
+        (integer_literal)
+        (integer_literal)
+        (integer_literal))
+      (statement_list
         (call
           function: (identifier)
           arguments: (argument_list
@@ -773,24 +780,26 @@ let x = case something(10)
             (boolean_literal)))
         (integer_literal)))
     (of_branch
-      value: (integer_literal)
-      body: (statement_list
+      values: (expression_list
+        (integer_literal))
+      (statement_list
         (float_literal))))
   (case
     value: (identifier)
     (of_branch
-      value: (boolean_literal)
-      body: (statement_list
+      values: (expression_list
+        (boolean_literal))
+      (statement_list
         (identifier)))
-    alternative: (elif_clause
+    (elif_branch
       condition: (identifier)
       consequence: (statement_list
         (call
           function: (identifier)
           arguments: (argument_list
             (integer_literal)))))
-    alternative: (else_clause
-      body: (statement_list
+    (else_branch
+      (statement_list
         (call
           function: (identifier)
           arguments: (argument_list
@@ -801,41 +810,46 @@ let x = case something(10)
       arguments: (argument_list
         (integer_literal)))
     (of_branch
-      value: (boolean_literal)
-      body: (statement_list
+      values: (expression_list
+        (boolean_literal))
+      (statement_list
         (identifier)))
-    alternative: (elif_clause
+    (elif_branch
       condition: (identifier)
       consequence: (statement_list
         (identifier))))
   (case
     value: (identifier)
     (of_branch
-      value: (boolean_literal)
-      body: (statement_list
+      values: (expression_list
+        (boolean_literal))
+      (statement_list
         (integer_literal)))
     (of_branch
-      value: (boolean_literal)
-      body: (statement_list
+      values: (expression_list
+        (boolean_literal))
+      (statement_list
         (integer_literal))))
   (let_section
     (variable_declaration
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
       value: (case
         value: (call
           function: (identifier)
           arguments: (argument_list
             (integer_literal)))
         (of_branch
-          value: (boolean_literal)
-          body: (statement_list
+          values: (expression_list
+            (boolean_literal))
+          (statement_list
             (identifier)))
-        alternative: (elif_clause
+        (elif_branch
           condition: (identifier)
           consequence: (statement_list
             (boolean_literal)))
-        alternative: (else_clause
-          body: (statement_list
+        (else_branch
+          (statement_list
             (identifier)))))))
 
 ================================================================================
@@ -940,7 +954,7 @@ Pragma statements
 
 --------------------------------------------------------------------------------
 
-(ERROR
+(source_file
   (pragma_block
     (pragma
       (pragma_list

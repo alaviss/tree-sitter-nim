@@ -80,7 +80,12 @@ module.exports = grammar({
     $._layout_start,
     $._layout_end,
     $._invalid_layout,
-    $._terminator,
+    $._line,
+    $._line_elif,
+    $._line_else,
+    $._line_except,
+    $._line_finally,
+    $._line_of,
     ":",
     "=",
     $._binop10l,
@@ -98,9 +103,9 @@ module.exports = grammar({
   inline: $ => [$._maybe_colon_expression, $._maybe_equal_expression],
   supertypes: $ => [
     $._simple_expression,
-    $._block_expression,
+    $._expression,
     $._simple_statement,
-    $._block_statement,
+    $._statement,
   ],
   conflicts: $ => [
     [$._command_expression, $.binary_expression],
@@ -113,42 +118,77 @@ module.exports = grammar({
 
     statement_list: $ =>
       choice(
-        prec.right(
-          choice(
-            seq(
-              sep1($._simple_statement, ";"),
-              optional(seq(";", $._block_statement))
-            ),
-            seq(sep1($._simple_statement, ";"), $._terminator)
-          )
-        ),
+        prec.right(sep1($._simple_statement, ";")),
         seq(
           $._layout_start,
-          repeat1(
-            choice(
-              seq($._simple_statement, choice($._terminator, ";")),
-              seq($._block_statement)
-            )
-          ),
+          repeat1(seq($._line, sep1($._statement, ";"))),
           $._layout_end
         )
       ),
 
-    // Any statement that doesn't contain a terminator
+    // Any statement that doesn't contain a _terminator
     _simple_statement: $ =>
       prec(
         -1,
         choice($._simple_expression, alias($._command_call, $.call), $.pragma)
       ),
 
-    // Any statement that contain a block (implicitly terminates)
-    _block_statement: $ =>
-      choice($._block_expression, alias($._command_call_block, $.call)),
+    // Any statement
+    _statement: $ =>
+      choice(
+        $._expression,
+        $._declaration,
+        alias($._command_call_block, $.call),
+        $._simple_statement
+      ),
 
-    // All expressions. Use only in rules that doesn't care about termination
-    _expression: $ => choice($._simple_expression, $._block_expression),
+    _declaration: $ => choice($.const_section, $.let_section, $.var_section),
 
-    // Any expression that doesn't contain a terminator
+    const_section: $ =>
+      seq(ignoreStyle("const"), $._variable_declaration_section),
+
+    let_section: $ => seq(ignoreStyle("let"), $._variable_declaration_section),
+
+    var_section: $ => seq(ignoreStyle("var"), $._variable_declaration_section),
+
+    _variable_declaration_section: $ =>
+      choice(
+        $.variable_declaration,
+        seq(
+          $._layout_start,
+          repeat1(seq($._line, $.variable_declaration)),
+          $._layout_end
+        )
+      ),
+
+    variable_declaration: $ =>
+      prec.right(
+        seq(
+          $._symbol_declaration_list,
+          optional(seq(":", field("type", $._simple_expression))),
+          optional(seq("=", field("value", $._expression)))
+        )
+      ),
+
+    _symbol_declaration_list: $ =>
+      sep1(choice($.symbol_declaration, $.tuple_deconstruct_declaration), ","),
+
+    tuple_deconstruct_declaration: $ =>
+      seq("(", sep1($.symbol_declaration, ","), ")"),
+
+    symbol_declaration: $ =>
+      prec.right(
+        seq($._maybe_exported_symbol, optional(field("pragma", $.pragma)))
+      ),
+
+    _maybe_exported_symbol: $ =>
+      choice(field("name", $._symbol), $.exported_symbol),
+
+    exported_symbol: $ => seq(field("name", $._symbol), "*"),
+
+    _symbol: $ => seq(choice($.identifier, $.accent_quoted)),
+
+    // Any expression that doesn't contain a _terminator
     _simple_expression: $ =>
       choice(
         $._literals,
@@ -164,9 +204,10 @@ module.exports = grammar({
         $.identifier
       ),
 
-    _block_expression: $ =>
+    _expression: $ =>
       choice(
         alias($._block_call_expression, $.call),
+        $._simple_expression,
         $.block,
         $.case,
         $.if,
@@ -190,7 +231,10 @@ module.exports = grammar({
           ignoreStyle("try"),
           ":",
           field("body", $.statement_list),
-          seqReq1(repeat1($.except_branch), $.finally_branch)
+          seqReq1(
+            repeat1(seq(optional($._line_except), $.except_branch)),
+            seq(optional($._line_finally), $.finally_branch)
+          )
         )
       ),
 
@@ -199,15 +243,16 @@ module.exports = grammar({
         ignoreStyle("case"),
         field("value", $._simple_expression),
         optional(":"),
-        choice(
-          seq($._terminator, $._case_body),
-          seq($._layout_start, $._case_body, $._layout_end)
-        )
+        choice($._case_body, seq($._layout_start, $._case_body, $._layout_end))
       ),
 
     _case_body: $ =>
       prec.right(
-        seqReq1(repeat1($.of_branch), repeat1($.elif_branch), $.else_branch)
+        seqReq1(
+          repeat1(seq($._line_of, $.of_branch)),
+          repeat1(seq($._line_elif, $.elif_branch)),
+          seq($._line_else, $.else_branch)
+        )
       ),
 
     when: $ =>
@@ -217,8 +262,12 @@ module.exports = grammar({
           field("condition", $._simple_expression),
           ":",
           field("consequence", $.statement_list),
-          repeat(field("alternative", $.elif_branch)),
-          optional(field("alternative", $.else_branch))
+          repeat(
+            field("alternative", seq(optional($._line_elif), $.elif_branch))
+          ),
+          optional(
+            field("alternative", seq(optional($._line_else), $.else_branch))
+          )
         )
       ),
 
@@ -229,8 +278,12 @@ module.exports = grammar({
           field("condition", $._simple_expression),
           ":",
           field("consequence", $.statement_list),
-          repeat(field("alternative", $.elif_branch)),
-          optional(field("alternative", $.else_branch))
+          repeat(
+            field("alternative", seq(optional($._line_elif), $.elif_branch))
+          ),
+          optional(
+            field("alternative", seq(optional($._line_else), $.else_branch))
+          )
         )
       ),
 
@@ -308,12 +361,14 @@ module.exports = grammar({
           seqReq1(
             $.statement_list,
             repeat1(
-              choice(
-                $.of_branch,
-                $.elif_branch,
-                $.else_branch,
-                $.except_branch,
-                $.finally_branch
+              seq(
+                choice(
+                  seq($._line_of, $.of_branch),
+                  seq($._line_elif, $.elif_branch),
+                  seq($._line_else, $.else_branch),
+                  seq($._line_except, $.except_branch),
+                  seq($._line_finally, $.finally_branch)
+                )
               )
             )
           )

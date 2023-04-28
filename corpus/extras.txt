@@ -34,14 +34,16 @@ echo x,
   (comment)
   (let_section
     (variable_declaration
+      (symbol_declaration
+        (identifier))
       (identifier)
-      (type_identifier)
       (integer_literal))
     (comment)
     (comment)
     (comment)
     (variable_declaration
-      (identifier)
+      (symbol_declaration
+        (identifier))
       (float_literal)))
   (call
     (identifier)

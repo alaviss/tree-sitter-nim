@@ -1,13 +1,6 @@
-# Copyright 2022 Leorize <leorize+oss@disroot.org>
-#
-# SPDX-License-Identifier: MPL-2.0
-# This Source Code Form is subject to the terms of the Mozilla Public License,
-# v. 2.0. If a copy of the MPL was not distributed with this file, You can
-# obtain one at https://mozilla.org/MPL/2.0/.
-
-=====================
+================================================================================
 Constant declarations
-=====================
+================================================================================
 
 const Foo = 0
 coNs_T Bar: int = 10
@@ -31,67 +24,95 @@ const
     bar*,
     whatever = 10
 
----
+const Test* {.importc: "TEST".}: int
+
+--------------------------------------------------------------------------------
 
 (source_file
   (const_section
     (variable_declaration
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
       value: (integer_literal)))
   (const_section
     (variable_declaration
-      name: (identifier)
-      type: (type_identifier)
+      (symbol_declaration
+        name: (identifier))
+      type: (identifier)
       value: (integer_literal)))
   (const_section
     (variable_declaration
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
       value: (integer_literal))
     (variable_declaration
-      name: (identifier)
-      type: (type_identifier)
+      (symbol_declaration
+        name: (identifier))
+      type: (identifier)
       value: (integer_literal)))
   (const_section
     (variable_declaration
       (tuple_deconstruct_declaration
-        name: (identifier)
-        name: (identifier))
-      value: (tuple
-            (integer_literal)
-            (integer_literal))))
-  (const_section
-    (variable_declaration
-      name: (identifier)
-      value: (integer_literal))
-    (variable_declaration
-      (tuple_deconstruct_declaration
-        name: (identifier)
-        name: (identifier)
-        name: (identifier))
-      value: (tuple
-        (integer_literal)
-        (integer_literal)
-        (integer_literal))))
-  (const_section
-    (variable_declaration
-      (tuple_deconstruct_declaration
-        name: (identifier)
-        (exported_symbol
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
           name: (identifier)))
       value: (tuple
         (integer_literal)
         (integer_literal))))
   (const_section
     (variable_declaration
-      name: (identifier)
-      (exported_symbol
+      (symbol_declaration
         name: (identifier))
-      name: (identifier)
-      value: (integer_literal))))
+      value: (integer_literal))
+    (variable_declaration
+      (tuple_deconstruct_declaration
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          name: (identifier)))
+      value: (tuple
+        (integer_literal)
+        (integer_literal)
+        (integer_literal))))
+  (const_section
+    (variable_declaration
+      (tuple_deconstruct_declaration
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          (exported_symbol
+            name: (identifier))))
+      value: (tuple
+        (integer_literal)
+        (integer_literal))))
+  (const_section
+    (variable_declaration
+      (symbol_declaration
+        name: (identifier))
+      (symbol_declaration
+        (exported_symbol
+          name: (identifier)))
+      (symbol_declaration
+        name: (identifier))
+      value: (integer_literal)))
+  (const_section
+    (variable_declaration
+      (symbol_declaration
+        (exported_symbol
+          name: (identifier))
+        pragma: (pragma
+          (pragma_list
+            (colon_expression
+              left: (identifier)
+              right: (string_literal)))))
+      type: (identifier))))
 
-================
+================================================================================
 Let declarations
-================
+================================================================================
 
 let foo, dar = 0d
 lET bar: float = 10f32
@@ -101,40 +122,49 @@ l_e_t
   b: uint32 = 42
   (e, f) = (1, 2)
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (let_section
     (variable_declaration
-      name: (identifier)
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
+      (symbol_declaration
+        name: (identifier))
       value: (float_literal)))
   (let_section
     (variable_declaration
-      name: (identifier)
-      type: (type_identifier)
+      (symbol_declaration
+        name: (identifier))
+      type: (identifier)
       value: (float_literal)))
   (let_section
     (variable_declaration
-      name: (identifier)
-      name: (identifier)
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
+      (symbol_declaration
+        name: (identifier))
+      (symbol_declaration
+        name: (identifier))
       value: (integer_literal))
     (variable_declaration
-      name: (identifier)
-      type: (type_identifier)
+      (symbol_declaration
+        name: (identifier))
+      type: (identifier)
       value: (integer_literal))
     (variable_declaration
       (tuple_deconstruct_declaration
-        name: (identifier)
-        name: (identifier))
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          name: (identifier)))
       value: (tuple
         (integer_literal)
         (integer_literal)))))
 
-================
+================================================================================
 Var declarations
-================
+================================================================================
 
 var foo = 0d
 vaR bar: float = 10f32
@@ -148,48 +178,58 @@ var z, w: float
 
 var (c, d) = (2, 3)
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (var_section
     (variable_declaration
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
       value: (float_literal)))
   (var_section
     (variable_declaration
-      name: (identifier)
-      type: (type_identifier)
+      (symbol_declaration
+        name: (identifier))
+      type: (identifier)
       value: (float_literal)))
   (var_section
     (variable_declaration
-      name: (identifier)
+      (symbol_declaration
+        name: (identifier))
       value: (integer_literal))
     (variable_declaration
-      name: (identifier)
-      type: (type_identifier)
+      (symbol_declaration
+        name: (identifier))
+      type: (identifier)
       value: (integer_literal)))
   (var_section
     (variable_declaration
-      name: (identifier)
-      name: (identifier)
-      type: (type_identifier)))
+      (symbol_declaration
+        name: (identifier))
+      (symbol_declaration
+        name: (identifier))
+      type: (identifier)))
   (var_section
     (variable_declaration
-      name: (identifier)
-      name: (identifier)
-      type: (type_identifier)))
+      (symbol_declaration
+        name: (identifier))
+      (symbol_declaration
+        name: (identifier))
+      type: (identifier)))
   (var_section
     (variable_declaration
       (tuple_deconstruct_declaration
-        name: (identifier)
-        name: (identifier))
+        (symbol_declaration
+          name: (identifier))
+        (symbol_declaration
+          name: (identifier)))
       value: (tuple
         (integer_literal)
         (integer_literal)))))
 
-=================
+================================================================================
 Type declarations
-=================
+================================================================================
 
 type X = int
 type
@@ -211,7 +251,7 @@ type
   C = object
   D = ref object
 
----
+--------------------------------------------------------------------------------
 
 (source_file
   (type_section
