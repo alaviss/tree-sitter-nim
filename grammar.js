@@ -123,11 +123,14 @@ module.exports = grammar({
     statement_list: $ =>
       choice(
         prec.right(sep1($._simple_statement, ";")),
-        seq(
-          $._layout_start,
-          repeat1(seq($._line, sep1($._statement, ";"))),
-          $._layout_end
-        )
+        $._block_statement_list
+      ),
+
+    _block_statement_list: $ =>
+      seq(
+        $._layout_start,
+        repeat1(seq($._line, sep1($._statement, ";"))),
+        $._layout_end
       ),
 
     // Any statement that doesn't contain a _terminator
@@ -192,8 +195,42 @@ module.exports = grammar({
         $._object_like_declaration,
         alias($._distinct_declaration, $.distinct_type),
         alias($._pointer_declaration, $.pointer_type),
-        alias($._ref_declaration, $.ref_type)
+        alias($._ref_declaration, $.ref_type),
+        $.concept_declaration
       ),
+
+    concept_declaration: $ =>
+      seq(
+        ignoreStyle("concept"),
+        optional(
+          field(
+            "parameters",
+            alias($._concept_parameter_list, $.parameter_list)
+          )
+        ),
+        optional(seq(ignoreStyle("of"), field("refines", $.refinement_list))),
+        field("body", alias($._block_statement_list, $.statement_list))
+      ),
+
+    _concept_parameter_list: $ => sep1($._concept_parameter, ","),
+
+    _concept_parameter: $ =>
+      choice(
+        $._symbol,
+        alias($._concept_pointer_parameter, $.pointer_parameter),
+        alias($._concept_ref_parameter, $.ref_parameter),
+        alias($._concept_static_parameter, $.static_parameter),
+        alias($._concept_type_parameter, $.type_parameter),
+        alias($._concept_var_parameter, $.var_parameter)
+      ),
+
+    _concept_pointer_parameter: $ => seq(ignoreStyle("ptr"), $._symbol),
+    _concept_ref_parameter: $ => seq(ignoreStyle("ref"), $._symbol),
+    _concept_static_parameter: $ => seq(ignoreStyle("static"), $._symbol),
+    _concept_type_parameter: $ => seq(ignoreStyle("type"), $._symbol),
+    _concept_var_parameter: $ => seq(ignoreStyle("var"), $._symbol),
+
+    refinement_list: $ => sep1($._simple_expression, ","),
 
     _object_like_declaration: $ =>
       choice($.object_declaration, alias($._tuple_declaration, $.tuple_type)),

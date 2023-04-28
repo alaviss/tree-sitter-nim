@@ -534,3 +534,154 @@ type
       (type_symbol_declaration
         name: (identifier))
       (tuple_type))))
+
+================================================================================
+Concept declarations
+================================================================================
+
+type
+  OutputStream = concept var s
+    s.write(string)
+
+  AdditiveMonoid* = concept x, y, type T
+    x + y is T
+    T.zero is T
+
+  Graph = concept g, type G of EquallyComparable, Copyable
+    type
+      VertexType = G.VertexType
+      EdgeType = G.EdgeType
+
+    VertexType is Copyable
+    EdgeType is Copyable
+
+    var
+      v: VertexType
+      e: EdgeType
+
+  IncidendeGraph = concept of Graph
+    # symbols such as variables and types from the refined
+    # concept are automatically in scope:
+
+    g.source(e) is VertexType
+    g.target(e) is VertexType
+
+    g.outgoingEdges(v) is Enumerable[EdgeType]
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (type_section
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (concept_declaration
+        parameters: (parameter_list
+          (var_parameter
+            (identifier)))
+        body: (statement_list
+          (call
+            function: (dot_expression
+              left: (identifier)
+              right: (identifier))
+            arguments: (argument_list
+              (identifier))))))
+    (type_declaration
+      (type_symbol_declaration
+        (exported_symbol
+          name: (identifier)))
+      (concept_declaration
+        parameters: (parameter_list
+          (identifier)
+          (identifier)
+          (type_parameter
+            (identifier)))
+        body: (statement_list
+          (binary_expression
+            left: (binary_expression
+              left: (identifier)
+              right: (identifier))
+            right: (identifier))
+          (binary_expression
+            left: (dot_expression
+              left: (identifier)
+              right: (identifier))
+            right: (identifier)))))
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (concept_declaration
+        parameters: (parameter_list
+          (identifier)
+          (type_parameter
+            (identifier)))
+        refines: (refinement_list
+          (identifier)
+          (identifier))
+        body: (statement_list
+          (type_section
+            (type_declaration
+              (type_symbol_declaration
+                name: (identifier))
+              (dot_expression
+                left: (identifier)
+                right: (identifier)))
+            (type_declaration
+              (type_symbol_declaration
+                name: (identifier))
+              (dot_expression
+                left: (identifier)
+                right: (identifier))))
+          (binary_expression
+            left: (identifier)
+            right: (identifier))
+          (binary_expression
+            left: (identifier)
+            right: (identifier))
+          (var_section
+            (variable_declaration
+              (symbol_declaration_list
+                (symbol_declaration
+                  name: (identifier)))
+              type: (identifier))
+            (variable_declaration
+              (symbol_declaration_list
+                (symbol_declaration
+                  name: (identifier)))
+              type: (identifier))))))
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (concept_declaration
+        refines: (refinement_list
+          (identifier))
+        (comment)
+        (comment)
+        body: (statement_list
+          (binary_expression
+            left: (call
+              function: (dot_expression
+                left: (identifier)
+                right: (identifier))
+              arguments: (argument_list
+                (identifier)))
+            right: (identifier))
+          (binary_expression
+            left: (call
+              function: (dot_expression
+                left: (identifier)
+                right: (identifier))
+              arguments: (argument_list
+                (identifier)))
+            right: (identifier))
+          (binary_expression
+            left: (call
+              function: (dot_expression
+                left: (identifier)
+                right: (identifier))
+              arguments: (argument_list
+                (identifier)))
+            right: (bracket_expression
+              left: (identifier)
+              right: (argument_list
+                (identifier)))))))))
