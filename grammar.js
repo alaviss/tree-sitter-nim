@@ -86,6 +86,7 @@ module.exports = grammar({
     $._line_except,
     $._line_finally,
     $._line_of,
+    $._line_do,
     ":",
     "=",
     $._binop10l,
@@ -674,8 +675,10 @@ module.exports = grammar({
         $._literals,
         $.accent_quoted,
         $.binary_expression,
+        $.bracket,
         $.bracket_expression,
         alias($._simple_call_expression, $.call),
+        $.curly,
         $.curly_expression,
         $.dot_expression,
         $.parenthesized_expression,
@@ -696,7 +699,7 @@ module.exports = grammar({
           ignoreStyle("tuple"),
           optional(
             seq(
-              "[",
+              token.immediate("["),
               sep1(
                 alias($.variable_declaration, $.field_declaration),
                 token(choice(",", ";"))
@@ -786,23 +789,38 @@ module.exports = grammar({
     call_block_arguments: $ =>
       prec.right(
         -10,
-        seq(
-          ":",
-          seqReq1(
-            $.statement_list,
-            repeat1(
-              seq(
-                choice(
-                  seq($._line_of, $.of_branch),
-                  seq($._line_elif, $.elif_branch),
-                  seq($._line_else, $.else_branch),
-                  seq($._line_except, $.except_branch),
-                  seq($._line_finally, $.finally_branch)
+        seqReq1(
+          seq(
+            ":",
+            seqReq1(
+              $.statement_list,
+              repeat1(
+                seq(
+                  choice(
+                    seq($._line_of, $.of_branch),
+                    seq($._line_elif, $.elif_branch),
+                    seq($._line_else, $.else_branch),
+                    seq($._line_except, $.except_branch),
+                    seq($._line_finally, $.finally_branch)
+                  )
                 )
               )
             )
-          )
+          ),
+          repeat1(seq(optional($._line_do), $.do_block))
         )
+      ),
+
+    do_block: $ =>
+      seq(
+        ignoreStyle("do"),
+        optional(
+          seq("(", optional(field("parameters", $.parameter_list)), ")")
+        ),
+        optional(seq("->", field("return_type", $._simple_expression))),
+        optional(field("pragma", $._pragma)),
+        ":",
+        field("body", $.statement_list)
       ),
 
     argument_list: $ =>
@@ -873,6 +891,10 @@ module.exports = grammar({
         )
       ),
 
+    bracket: $ => seq("[", alias($.argument_list, "bracket list"), "]"),
+
+    curly: $ => seq("{", alias($.argument_list, "curly list"), "}"),
+
     parenthesized_expression: $ => seq("(", $._expression, ")"),
 
     bracket_expression: $ =>
@@ -880,7 +902,7 @@ module.exports = grammar({
         Precedence.Suffix,
         seq(
           field("left", $._simple_expression),
-          "[",
+          token.immediate("["),
           field("right", $.argument_list),
           "]"
         )
@@ -891,7 +913,7 @@ module.exports = grammar({
         Precedence.Suffix,
         seq(
           field("left", $._simple_expression),
-          "{",
+          token.immediate("{"),
           field("right", $.argument_list),
           "}"
         )

@@ -41,6 +41,7 @@ enum class TokenType : TSSymbol {
   LineExcept,
   LineFinally,
   LineOf,
+  LineDo,
   Colon,
   Equal,
   BinaryOpStart,
@@ -661,10 +662,11 @@ bool lex(Context& ctx)
 namespace line {
 constexpr auto LineTokens = make_valid_symbols(
     {TokenType::Line, TokenType::LineElif, TokenType::LineElse,
-     TokenType::LineOf, TokenType::LineExcept, TokenType::LineFinally});
+     TokenType::LineOf, TokenType::LineExcept, TokenType::LineFinally,
+     TokenType::LineDo});
 constexpr auto LineKeyword = make_valid_symbols(
     {TokenType::LineElif, TokenType::LineElse, TokenType::LineOf,
-     TokenType::LineExcept, TokenType::LineFinally});
+     TokenType::LineExcept, TokenType::LineFinally, TokenType::LineDo});
 
 string get_keyword(Context& ctx)
 {
@@ -722,6 +724,9 @@ bool lex(Context& ctx)
     }
     if (keyword == "finally" && ctx.valid(TokenType::LineFinally)) {
       return ctx.finish(TokenType::LineFinally);
+    }
+    if (keyword == "do" && ctx.valid(TokenType::LineDo)) {
+      return ctx.finish(TokenType::LineDo);
     }
   }
 

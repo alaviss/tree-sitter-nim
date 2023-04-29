@@ -9005,6 +9005,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "bracket"
+        },
+        {
+          "type": "SYMBOL",
           "name": "bracket_expression"
         },
         {
@@ -9015,6 +9019,10 @@
           },
           "named": true,
           "value": "call"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "curly"
         },
         {
           "type": "SYMBOL",
@@ -9191,8 +9199,11 @@
                 "type": "SEQ",
                 "members": [
                   {
-                    "type": "STRING",
-                    "value": "["
+                    "type": "IMMEDIATE_TOKEN",
+                    "content": {
+                      "type": "STRING",
+                      "value": "["
+                    }
                   },
                   {
                     "type": "SEQ",
@@ -10099,112 +10110,205 @@
       "type": "PREC_RIGHT",
       "value": -10,
       "content": {
-        "type": "SEQ",
+        "type": "CHOICE",
         "members": [
           {
-            "type": "STRING",
-            "value": ":"
-          },
-          {
-            "type": "CHOICE",
+            "type": "SEQ",
             "members": [
               {
                 "type": "SEQ",
                 "members": [
                   {
-                    "type": "SYMBOL",
-                    "name": "statement_list"
+                    "type": "STRING",
+                    "value": ":"
                   },
                   {
                     "type": "CHOICE",
                     "members": [
                       {
-                        "type": "REPEAT1",
-                        "content": {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "CHOICE",
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "statement_list"
+                          },
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "REPEAT1",
+                                "content": {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "CHOICE",
+                                      "members": [
+                                        {
+                                          "type": "SEQ",
+                                          "members": [
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "_line_of"
+                                            },
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "of_branch"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "SEQ",
+                                          "members": [
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "_line_elif"
+                                            },
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "elif_branch"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "SEQ",
+                                          "members": [
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "_line_else"
+                                            },
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "else_branch"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "SEQ",
+                                          "members": [
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "_line_except"
+                                            },
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "except_branch"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "SEQ",
+                                          "members": [
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "_line_finally"
+                                            },
+                                            {
+                                              "type": "SYMBOL",
+                                              "name": "finally_branch"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "BLANK"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "REPEAT1",
+                            "content": {
+                              "type": "SEQ",
                               "members": [
                                 {
-                                  "type": "SEQ",
+                                  "type": "CHOICE",
                                   "members": [
                                     {
-                                      "type": "SYMBOL",
-                                      "name": "_line_of"
+                                      "type": "SEQ",
+                                      "members": [
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "_line_of"
+                                        },
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "of_branch"
+                                        }
+                                      ]
                                     },
                                     {
-                                      "type": "SYMBOL",
-                                      "name": "of_branch"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "SEQ",
-                                  "members": [
-                                    {
-                                      "type": "SYMBOL",
-                                      "name": "_line_elif"
+                                      "type": "SEQ",
+                                      "members": [
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "_line_elif"
+                                        },
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "elif_branch"
+                                        }
+                                      ]
                                     },
                                     {
-                                      "type": "SYMBOL",
-                                      "name": "elif_branch"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "SEQ",
-                                  "members": [
-                                    {
-                                      "type": "SYMBOL",
-                                      "name": "_line_else"
+                                      "type": "SEQ",
+                                      "members": [
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "_line_else"
+                                        },
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "else_branch"
+                                        }
+                                      ]
                                     },
                                     {
-                                      "type": "SYMBOL",
-                                      "name": "else_branch"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "SEQ",
-                                  "members": [
-                                    {
-                                      "type": "SYMBOL",
-                                      "name": "_line_except"
+                                      "type": "SEQ",
+                                      "members": [
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "_line_except"
+                                        },
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "except_branch"
+                                        }
+                                      ]
                                     },
                                     {
-                                      "type": "SYMBOL",
-                                      "name": "except_branch"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "SEQ",
-                                  "members": [
-                                    {
-                                      "type": "SYMBOL",
-                                      "name": "_line_finally"
-                                    },
-                                    {
-                                      "type": "SYMBOL",
-                                      "name": "finally_branch"
+                                      "type": "SEQ",
+                                      "members": [
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "_line_finally"
+                                        },
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "finally_branch"
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
                               ]
                             }
-                          ]
-                        }
-                      },
-                      {
-                        "type": "BLANK"
+                          }
+                        ]
                       }
                     ]
                   }
                 ]
               },
               {
-                "type": "SEQ",
+                "type": "CHOICE",
                 "members": [
                   {
                     "type": "REPEAT1",
@@ -10215,81 +10319,191 @@
                           "type": "CHOICE",
                           "members": [
                             {
-                              "type": "SEQ",
-                              "members": [
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "_line_of"
-                                },
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "of_branch"
-                                }
-                              ]
+                              "type": "SYMBOL",
+                              "name": "_line_do"
                             },
                             {
-                              "type": "SEQ",
-                              "members": [
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "_line_elif"
-                                },
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "elif_branch"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "SEQ",
-                              "members": [
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "_line_else"
-                                },
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "else_branch"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "SEQ",
-                              "members": [
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "_line_except"
-                                },
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "except_branch"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "SEQ",
-                              "members": [
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "_line_finally"
-                                },
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "finally_branch"
-                                }
-                              ]
+                              "type": "BLANK"
                             }
                           ]
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "do_block"
                         }
                       ]
                     }
+                  },
+                  {
+                    "type": "BLANK"
                   }
                 ]
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "_line_do"
+                        },
+                        {
+                          "type": "BLANK"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "do_block"
+                    }
+                  ]
+                }
               }
             ]
           }
         ]
       }
+    },
+    "do_block": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "d"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "_"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "o"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "O"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "("
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "parameters",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "parameter_list"
+                      }
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "STRING",
+                  "value": ")"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "->"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "return_type",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_simple_expression"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "pragma",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_pragma"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "statement_list"
+          }
+        }
+      ]
     },
     "argument_list": {
       "type": "SEQ",
@@ -11138,6 +11352,50 @@
         }
       ]
     },
+    "bracket": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "["
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "argument_list"
+          },
+          "named": false,
+          "value": "bracket list"
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "curly": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "argument_list"
+          },
+          "named": false,
+          "value": "curly list"
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
+    },
     "parenthesized_expression": {
       "type": "SEQ",
       "members": [
@@ -11170,8 +11428,11 @@
             }
           },
           {
-            "type": "STRING",
-            "value": "["
+            "type": "IMMEDIATE_TOKEN",
+            "content": {
+              "type": "STRING",
+              "value": "["
+            }
           },
           {
             "type": "FIELD",
@@ -11203,8 +11464,11 @@
             }
           },
           {
-            "type": "STRING",
-            "value": "{"
+            "type": "IMMEDIATE_TOKEN",
+            "content": {
+              "type": "STRING",
+              "value": "{"
+            }
           },
           {
             "type": "FIELD",
@@ -15018,6 +15282,10 @@
     {
       "type": "SYMBOL",
       "name": "_line_of"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_line_do"
     },
     {
       "type": "STRING",

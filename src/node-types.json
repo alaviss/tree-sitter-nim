@@ -66,6 +66,10 @@
         "named": true
       },
       {
+        "type": "bracket",
+        "named": true
+      },
+      {
         "type": "bracket_expression",
         "named": true
       },
@@ -75,6 +79,10 @@
       },
       {
         "type": "char_literal",
+        "named": true
+      },
+      {
+        "type": "curly",
         "named": true
       },
       {
@@ -458,6 +466,34 @@
     }
   },
   {
+    "type": "bracket",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "bracket list",
+    "named": false,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "_simple_expression",
+          "named": true
+        },
+        {
+          "type": "colon_expression",
+          "named": true
+        },
+        {
+          "type": "equal_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "bracket_expression",
     "named": true,
     "fields": {
@@ -537,6 +573,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "do_block",
+          "named": true
+        },
         {
           "type": "elif_branch",
           "named": true
@@ -839,6 +879,34 @@
     }
   },
   {
+    "type": "curly",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "curly list",
+    "named": false,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "_simple_expression",
+          "named": true
+        },
+        {
+          "type": "colon_expression",
+          "named": true
+        },
+        {
+          "type": "equal_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "curly_expression",
     "named": true,
     "fields": {
@@ -912,6 +980,56 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "do_block",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      },
+      "parameters": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "parameter_list",
+            "named": true
+          }
+        ]
+      },
+      "pragma": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "pragma_list",
+            "named": true
+          },
+          {
+            "type": "{.",
+            "named": false
+          }
+        ]
+      },
+      "return_type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "_simple_expression",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -3198,6 +3316,10 @@
   },
   {
     "type": ",",
+    "named": false
+  },
+  {
+    "type": "->",
     "named": false
   },
   {

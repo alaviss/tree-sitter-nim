@@ -290,6 +290,18 @@ of 1, 2:
   else:
     y
 
+cmp() do (x, y: int) -> int:
+  x - y
+
+fn() do:
+  x
+do:
+  y
+
+bar():
+  x
+do: y
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -356,7 +368,41 @@ of 1, 2:
                 (identifier))
               (else_branch
                 (statement_list
-                  (identifier))))))))))
+                  (identifier)))))))))
+  (call
+    function: (identifier)
+    arguments: (call_block_arguments
+      (do_block
+        parameters: (parameter_list
+          (parameter_declaration
+            (symbol_declaration_list
+              (symbol_declaration
+                name: (identifier))
+              (symbol_declaration
+                name: (identifier)))
+            type: (identifier)))
+        return_type: (identifier)
+        body: (statement_list
+          (binary_expression
+            left: (identifier)
+            right: (identifier))))))
+  (call
+    function: (identifier)
+    arguments: (call_block_arguments
+      (do_block
+        body: (statement_list
+          (identifier)))
+      (do_block
+        body: (statement_list
+          (identifier)))))
+  (call
+    function: (identifier)
+    arguments: (call_block_arguments
+      (statement_list
+        (identifier))
+      (do_block
+        body: (statement_list
+          (identifier))))))
 
 ================================================================================
 Command calls
@@ -378,6 +424,11 @@ foo "xyz"
 
 foo """
 xyz"""
+
+foo x, y, z:
+  x
+do:
+  y
 
 --------------------------------------------------------------------------------
 
@@ -448,7 +499,19 @@ xyz"""
   (call
     function: (identifier)
     arguments: (argument_list
-      (string_literal))))
+      (string_literal)))
+  (call
+    function: (identifier)
+    arguments: (argument_list
+      (identifier)
+      (identifier)
+      (identifier))
+    arguments: (call_block_arguments
+      (statement_list
+        (identifier))
+      (do_block
+        body: (statement_list
+          (identifier))))))
 
 ================================================================================
 Block statements
@@ -1059,3 +1122,52 @@ iterator (s: string) =
         body: (statement_list
           (yield_statement
             (identifier)))))))
+
+================================================================================
+Array construction
+================================================================================
+
+[a, b, c]
+
+[x,
+y, z, 10,
+
+100]
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (bracket
+    (identifier)
+    (identifier)
+    (identifier))
+  (bracket
+    (identifier)
+    (identifier)
+    (identifier)
+    (integer_literal)
+    (integer_literal)))
+
+================================================================================
+Set/Table construction
+================================================================================
+
+{a: b, c: d}
+
+{a, b, c, d}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (curly
+    (colon_expression
+      (identifier)
+      (identifier))
+    (colon_expression
+      (identifier)
+      (identifier)))
+  (curly
+    (identifier)
+    (identifier)
+    (identifier)
+    (identifier)))
