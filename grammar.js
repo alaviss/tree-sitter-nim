@@ -76,10 +76,12 @@ module.exports = grammar({
   word: $ => $.identifier,
   externals: $ => [
     $.comment,
+    $.comment_disable,
     $._long_string_quote,
     $._layout_start,
     $._layout_end,
     $._invalid_layout,
+    $.layout_disable,
     $._line,
     $._line_elif,
     $._line_else,
@@ -109,8 +111,8 @@ module.exports = grammar({
     $._statement,
   ],
   conflicts: $ => [
-    [$._command_expression, $.binary_expression],
     [$._command_expression, $.unary_expression, $.binary_expression],
+    [$._command_expression, $.binary_expression],
   ],
   precedences: $ => [
     [$._symbol, $._simple_expression], // break conflict between var type and var section
@@ -118,8 +120,7 @@ module.exports = grammar({
   ],
 
   rules: {
-    source_file: $ =>
-      choice(alias($.statement_list, ""), seq($._layout_start, $._layout_end)),
+    source_file: $ => alias($.statement_list, "source"),
 
     statement_list: $ =>
       choice(
@@ -130,7 +131,7 @@ module.exports = grammar({
     _block_statement_list: $ =>
       seq(
         $._layout_start,
-        repeat1(seq($._line, sep1($._statement, ";"))),
+        repeat(seq($._line, sep1($._statement, ";"))),
         $._layout_end
       ),
 
@@ -257,7 +258,7 @@ module.exports = grammar({
       seq(ignoreStyle("include"), alias($.expression_list, "include files")),
 
     discard_statement: $ =>
-      prec.right(seq(ignoreStyle("discard"), optional($._expression))),
+      prec.left(seq(ignoreStyle("discard"), optional($._expression))),
 
     assembly_statement: $ =>
       seq(
@@ -267,23 +268,23 @@ module.exports = grammar({
       ),
 
     break_statement: $ =>
-      prec.right(
+      prec.left(
         seq(ignoreStyle("break"), optional(field("label", $._expression)))
       ),
 
     continue_statement: $ =>
-      prec.right(
+      prec.left(
         seq(ignoreStyle("continue"), optional(field("label", $._expression)))
       ),
 
     return_statement: $ =>
-      prec.right(seq(ignoreStyle("return"), optional($._expression))),
+      prec.left(seq(ignoreStyle("return"), optional($._expression))),
 
     raise_statement: $ =>
-      prec.right(seq(ignoreStyle("raise"), optional($._expression))),
+      prec.left(seq(ignoreStyle("raise"), optional($._expression))),
 
     yield_statement: $ =>
-      prec.right(seq(ignoreStyle("yield"), optional($._expression))),
+      prec.left(seq(ignoreStyle("yield"), optional($._expression))),
 
     _declaration: $ =>
       choice(
@@ -367,7 +368,8 @@ module.exports = grammar({
         alias($._distinct_declaration, $.distinct_type),
         alias($._pointer_declaration, $.pointer_type),
         alias($._ref_declaration, $.ref_type),
-        $.concept_declaration
+        $.concept_declaration,
+        $.enum_declaration
       ),
 
     concept_declaration: $ =>
@@ -402,6 +404,25 @@ module.exports = grammar({
     _concept_var_parameter: $ => seq(ignoreStyle("var"), $._symbol),
 
     refinement_list: $ => sep1($._simple_expression, ","),
+
+    enum_declaration: $ =>
+      seq(
+        ignoreStyle("enum"),
+        choice(
+          repeat1(seq($.enum_field_declaration, optional(","))),
+          seq(
+            $._layout_start,
+            repeat1(seq($._line, $.enum_field_declaration, optional(","))),
+            $._layout_end
+          )
+        )
+      ),
+
+    enum_field_declaration: $ =>
+      seq(
+        $.symbol_declaration,
+        optional(seq("=", field("value", $._simple_expression)))
+      ),
 
     _object_like_declaration: $ =>
       choice($.object_declaration, alias($._tuple_declaration, $.tuple_type)),
@@ -499,9 +520,11 @@ module.exports = grammar({
       ),
 
     _variant_body: $ =>
-      seqReq1(
-        repeat1(seq($._line_of, alias($._variant_of_branch, $.of_branch))),
-        seq($._line_else, alias($._variant_else_branch, $.else_branch))
+      repeat1(
+        choice(
+          seq($._line_of, alias($._variant_of_branch, $.of_branch)),
+          seq($._line_else, alias($._variant_else_branch, $.else_branch))
+        )
       ),
 
     _variant_of_branch: $ =>
@@ -606,9 +629,11 @@ module.exports = grammar({
           ignoreStyle("try"),
           ":",
           field("body", $.statement_list),
-          seqReq1(
-            repeat1(seq(optional($._line_except), $.except_branch)),
-            seq(optional($._line_finally), $.finally_branch)
+          repeat1(
+            choice(
+              seq(optional($._line_except), $.except_branch),
+              seq(optional($._line_finally), $.finally_branch)
+            )
           )
         )
       ),
@@ -622,11 +647,13 @@ module.exports = grammar({
       ),
 
     _case_body: $ =>
-      prec.right(
-        seqReq1(
-          repeat1(seq($._line_of, $.of_branch)),
-          repeat1(seq($._line_elif, $.elif_branch)),
-          seq($._line_else, $.else_branch)
+      prec.left(
+        repeat1(
+          choice(
+            seq($._line_of, $.of_branch),
+            seq($._line_elif, $.elif_branch),
+            seq($._line_else, $.else_branch)
+          )
         )
       ),
 
@@ -638,10 +665,10 @@ module.exports = grammar({
           ":",
           field("consequence", $.statement_list),
           repeat(
-            field("alternative", seq(optional($._line_elif), $.elif_branch))
-          ),
-          optional(
-            field("alternative", seq(optional($._line_else), $.else_branch))
+            choice(
+              field("alternative", seq(optional($._line_elif), $.elif_branch)),
+              field("alternative", seq(optional($._line_else), $.else_branch))
+            )
           )
         )
       ),
@@ -654,10 +681,10 @@ module.exports = grammar({
           ":",
           field("consequence", $.statement_list),
           repeat(
-            field("alternative", seq(optional($._line_elif), $.elif_branch))
-          ),
-          optional(
-            field("alternative", seq(optional($._line_else), $.else_branch))
+            choice(
+              field("alternative", seq(optional($._line_elif), $.elif_branch)),
+              field("alternative", seq(optional($._line_else), $.else_branch))
+            )
           )
         )
       ),
@@ -733,7 +760,8 @@ module.exports = grammar({
     _block_call_expression: $ => choice($._call_with_block, $._block_call),
 
     _parenthesized_call: $ =>
-      prec.right(
+      prec(
+        Precedence.Suffix,
         seq(
           field("function", $._simple_expression),
           seq(
@@ -763,8 +791,8 @@ module.exports = grammar({
       ),
 
     _command_expression: $ =>
-      prec.right(
-        1,
+      prec.left(
+        Precedence.Suffix,
         seq(
           field("function", $._simple_expression),
           field("arguments", alias($._simple_expression, $.argument_list))
@@ -1110,6 +1138,7 @@ module.exports = grammar({
         repeat(
           choice(
             token.immediate(/[^\n\r"\\]+/),
+            $.comment_disable,
             alias($._string_escape_sequence, $.escape_sequence)
           )
         ),
@@ -1141,7 +1170,12 @@ module.exports = grammar({
 
     _long_string_content: $ =>
       repeat1(
-        choice(token.immediate(/[^"]+/), alias($._long_string_quote, '"'))
+        choice(
+          token.immediate(/[^"]+/),
+          alias($._long_string_quote, '"'),
+          $.comment_disable,
+          $.layout_disable
+        )
       ),
 
     generalized_string_literal: $ =>
@@ -1151,7 +1185,9 @@ module.exports = grammar({
       seq(
         field("function", $.identifier),
         token.immediate('"'),
+        optional($.comment_disable),
         optional($._raw_string_content),
+        optional($.comment_disable),
         token.immediate('"')
       ),
 
@@ -1197,7 +1233,7 @@ function ignoreStyle(ident) {
     rules.push(optional("_"), choice(lower, upper));
   }
 
-  return token(seq(...rules));
+  return token(prec(1, seq(...rules)));
 }
 
 /**

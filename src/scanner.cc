@@ -31,10 +31,12 @@ constexpr auto BitsInByte = 8;
 enum class TokenType : TSSymbol {
   TokenTypeStart,
   Comment = TokenTypeStart,
+  CommentDisable,
   LongStringQuote,
   LayoutStart,
   LayoutEnd,
   InvalidLayout,
+  LayoutDisable,
   Line,
   LineElif,
   LineElse,
@@ -600,7 +602,8 @@ bool handle_line_comment(Context& ctx)
 
 bool lex(Context& ctx)
 {
-  if (!ctx.valid(TokenType::Comment)) {
+  if (!ctx.valid(TokenType::Comment) ||
+      (ctx.valid(TokenType::CommentDisable) && !ctx.error())) {
     return false;
   }
 
@@ -730,7 +733,7 @@ bool lex(Context& ctx)
     }
   }
 
-  if (ctx.valid(TokenType::Line)) {
+  if (ctx.valid(TokenType::Line) && !ctx.eof()) {
     return ctx.finish(TokenType::Line);
   }
 
@@ -775,16 +778,24 @@ bool lex_indent(Context& ctx)
     return false;
   }
 
+  if (ctx.valid(TokenType::LayoutDisable) && !ctx.error()) {
+    return false;
+  }
+
   const int32_t last_indent =
       !ctx.state().layout_stack.empty() ? ctx.state().layout_stack.back() : -1;
 
   if (ctx.valid(TokenType::LayoutStart) && last_indent < line_indent) {
+    // Don't open new root on error
+    if (ctx.state().layout_stack.empty() && ctx.error()) {
+      return false;
+    }
     ctx.state().layout_stack.push_back(line_indent);
     ctx.mark_end();
     return ctx.finish(TokenType::LayoutStart);
   }
 
-  if (ctx.valid(TokenType::LayoutEnd)) {
+  if (ctx.valid(TokenType::LayoutEnd) && !ctx.state().layout_stack.empty()) {
     if (last_indent > line_indent) {
       ctx.state().layout_stack.pop_back();
       ctx.mark_end();
@@ -792,6 +803,7 @@ bool lex_indent(Context& ctx)
     }
 
     if (ctx.eof()) {
+      ctx.state().layout_stack.pop_back();
       ctx.mark_end();
       return ctx.finish(TokenType::LayoutEnd);
     }

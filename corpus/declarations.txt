@@ -815,3 +815,66 @@ proc bar
           (identifier)))))
   (proc_declaration
     name: (identifier)))
+
+================================================================================
+Enum declarations
+================================================================================
+
+type
+  E = enum A, B, C, D
+
+  Valued = enum
+    X = "X"
+    B = "B"
+
+  LineAndComma = enum
+    X,
+    Y,
+    D = "X"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (type_section
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (enum_declaration
+        (enum_field_declaration
+          (symbol_declaration
+            name: (identifier)))
+        (enum_field_declaration
+          (symbol_declaration
+            name: (identifier)))
+        (enum_field_declaration
+          (symbol_declaration
+            name: (identifier)))
+        (enum_field_declaration
+          (symbol_declaration
+            name: (identifier)))))
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (enum_declaration
+        (enum_field_declaration
+          (symbol_declaration
+            name: (identifier))
+          value: (string_literal))
+        (enum_field_declaration
+          (symbol_declaration
+            name: (identifier))
+          value: (string_literal))))
+    (type_declaration
+      (type_symbol_declaration
+        name: (identifier))
+      (enum_declaration
+        (enum_field_declaration
+          (symbol_declaration
+            name: (identifier)))
+        (enum_field_declaration
+          (symbol_declaration
+            name: (identifier)))
+        (enum_field_declaration
+          (symbol_declaration
+            name: (identifier))
+          value: (string_literal))))))

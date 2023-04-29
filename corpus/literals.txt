@@ -202,6 +202,15 @@ foo"very raw C:\Windows\System32"
 
 foobar""""extra spicy""""
 
+block:
+  """
+Can start at lower indentation
+"""
+
+"# not a comment"
+
+"""# not a comment"""
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -231,7 +240,12 @@ foobar""""extra spicy""""
   (generalized_string_literal
     function: (identifier))
   (generalized_string_literal
-    function: (identifier)))
+    function: (identifier))
+  (block
+    body: (statement_list
+      (string_literal)))
+  (string_literal)
+  (string_literal))
 
 ================================================================================
 Character literals
