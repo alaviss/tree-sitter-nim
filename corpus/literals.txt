@@ -135,35 +135,6 @@ f_Al_se
   (boolean_literal))
 
 ================================================================================
-Tuple literals
-================================================================================
-
-(20, 42)
-(0x2f, 0o755f)
-(20,)
-
-(x: 1, 2 + 3)
-
---------------------------------------------------------------------------------
-
-(source_file
-  (tuple
-    (integer_literal)
-    (integer_literal))
-  (tuple
-    (integer_literal)
-    (float_literal))
-  (tuple
-    (integer_literal))
-  (tuple
-    (colon_expression
-      (identifier)
-      (integer_literal))
-    (binary_expression
-      (integer_literal)
-      (integer_literal))))
-
-================================================================================
 String literals
 ================================================================================
 
@@ -197,10 +168,6 @@ Mutiline long string \escapes\are \not\interpreted
 """"""
 
 r""""string inside long string""""
-
-foo"very raw C:\Windows\System32"
-
-foobar""""extra spicy""""
 
 block:
   """
@@ -237,10 +204,6 @@ Can start at lower indentation
   (string_literal)
   (string_literal)
   (string_literal)
-  (generalized_string_literal
-    function: (identifier))
-  (generalized_string_literal
-    function: (identifier))
   (block
     body: (statement_list
       (string_literal)))
@@ -271,14 +234,10 @@ Character literals
   (char_literal)
   (char_literal)
   (char_literal)
-  (char_literal
-    (escape_sequence))
-  (char_literal
-    (escape_sequence))
-  (char_literal
-    (escape_sequence))
-  (char_literal
-    (escape_sequence)))
+  (char_literal)
+  (char_literal)
+  (char_literal)
+  (char_literal))
 
 ================================================================================
 Nil literal
@@ -306,15 +265,9 @@ Custom numeric literals
 --------------------------------------------------------------------------------
 
 (source_file
-  (custom_numeric_literal
-    function: (identifier))
-  (custom_numeric_literal
-    function: (identifier))
-  (custom_numeric_literal
-    function: (identifier))
-  (custom_numeric_literal
-    function: (identifier))
-  (custom_numeric_literal
-    function: (identifier))
-  (custom_numeric_literal
-    function: (identifier)))
+  (custom_numeric_literal)
+  (custom_numeric_literal)
+  (custom_numeric_literal)
+  (custom_numeric_literal)
+  (custom_numeric_literal)
+  (custom_numeric_literal))

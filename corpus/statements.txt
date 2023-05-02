@@ -188,6 +188,10 @@ discard
 
 discard bar
 
+discard a: b
+
+discard foo as bar
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -195,7 +199,17 @@ discard bar
     (string_literal))
   (discard_statement)
   (discard_statement
-    (identifier)))
+    (identifier))
+  (discard_statement
+    (call
+      function: (identifier)
+      arguments: (argument_list
+        (statement_list
+          (identifier)))))
+  (discard_statement
+    (infix_expression
+      left: (identifier)
+      right: (identifier))))
 
 ================================================================================
 Assembly statements
@@ -229,7 +243,7 @@ break blck
 (source_file
   (break_statement)
   (break_statement
-    label: (identifier)))
+    (identifier)))
 
 ================================================================================
 Continue statements
@@ -244,7 +258,7 @@ continue blck
 (source_file
   (continue_statement)
   (continue_statement
-    label: (identifier)))
+    (identifier)))
 
 ================================================================================
 Raise statements

@@ -5,83 +5,111 @@
 
 /// <reference types="tree-sitter-cli/dsl" />
 
-const DecimalLiteral = sep1(/[0-9]+/, "_");
-const Identifier = seq(
-  /[a-zA-Z\x80-\xff]+/,
-  repeat(/[a-zA-Z\x80-\xff0-9]+/),
-  repeat(seq("_", /[a-zA-Z\x80-\xff0-9]+/))
+const DecimalLiteral = /[0-9](_?[0-9])*/;
+const DecimalFloatLiteral = token(
+  seq(
+    optional("-"),
+    choice(
+      seq(DecimalLiteral, ".", DecimalLiteral),
+      seq(DecimalLiteral, /[eE][+-]?/, DecimalLiteral),
+      seq(DecimalLiteral, ".", DecimalLiteral, /[eE][+-]?/, DecimalLiteral)
+    )
+  )
 );
-const UnicodeMul = [
-  "∙",
-  "∘",
-  "×",
-  "★",
-  "⊗",
-  "⊘",
-  "⊙",
-  "⊛",
-  "⊠",
-  "⊡",
-  "∩",
-  "∧",
-  "⊓",
-];
-const UnicodeAdd = ["±", "⊕", "⊖", "⊞", "⊟", "∪", "∨", "⊔"];
-const OperatorChars = [
-  "=",
-  "+",
-  "-",
-  "*",
-  "/",
-  "<",
-  ">",
-  "@",
-  "$",
-  "~",
-  "&",
-  "%",
-  "|",
-  "!",
-  "?",
-  "^",
-  ".",
-  ":",
-  "\\",
-  ...UnicodeMul,
-  ...UnicodeAdd,
-];
+const NumericLiteral = token(
+  seq(
+    optional("-"),
+    choice(
+      DecimalLiteral,
+      /0[xX][0-9a-fA-F](_?[0-9a-fA-F])*/,
+      /0[oO][0-7](_?[0-7])*/,
+      /0[bB][01](_?[01])*/
+    )
+  )
+);
+const Identifier = /[a-zA-Z\x80-\xff](_?[a-zA-Z0-9\x80-\xff])*/;
+const CharEscapeSequence = /[rcnlftv\\"'abe]|\d+|x[0-9a-fA-F]{2}/;
+const RawStringLiteral = token.immediate(
+  seq('"', optional(/[^\n\r"](""|[^\n\r"])*/), '"')
+);
+const Templates = {
+  /**
+   * @template T
+   * @param {GrammarSymbols<T>} $
+   * @param {RuleOrLiteral} argument_list */
+  call: ($, argument_list) =>
+    prec(
+      "call",
+      seq(
+        field("function", $._basic_expression),
+        field("arguments", alias(argument_list, $.argument_list))
+      )
+    ),
 
-const Precedence = {
-  ColonEqExpr: 16,
-  Sigil: 15,
-  Dot: 14,
-  Suffix: 13,
-  Unary: 12,
-  Op10: 11,
-  Op9: 10,
-  Op8: 9,
-  Op7: 8,
-  Op6: 7,
-  Op5: 6,
-  Op4: 5,
-  Op3: 4,
-  Op2: 3,
-  Op1: 2,
-  Op0: 1,
+  /**
+   * @template T
+   * @param {GrammarSymbols<T>} $
+   * @param {RuleOrLiteral} keyword */
+  if: ($, keyword) =>
+    prec.right(
+      seq(
+        keyword,
+        field("condition", $._expression),
+        ":",
+        field("consequence", $.statement_list),
+        field(
+          "alternative",
+          repeat(
+            choice(
+              seq(optional($._line_elif), $.elif_branch),
+              seq(optional($._line_else), $.else_branch)
+            )
+          )
+        )
+      )
+    ),
+
+  /**
+   * @template T
+   * @param {GrammarSymbols<T>} $
+   * @param {RuleOrLiteral} keyword */
+  proc_expr: ($, keyword) =>
+    seq(keyword, $._routine_type_tail, "=", field("body", $.statement_list)),
+
+  /**
+   * @template T
+   * @param {GrammarSymbols<T>} $
+   * @param {RuleOrLiteral} keyword */
+  import: ($, keyword) =>
+    seq(
+      keyword,
+      choice(seq($._expression, $.except_clause), seq($.expression_list))
+    ),
+
+  /**
+   * @template T
+   * @param {GrammarSymbols<T>} $
+   * @param {RuleOrLiteral} keyword */
+  return_like: ($, keyword) =>
+    prec.right(seq(keyword, optional($._expression_with_colon_block_call))),
+};
+const WordOperators = {
+  9: ["div", "mod", "shl", "shr"],
+  5: ["in", "notin", "is", "isnot", "not", "of", "as", "from"],
+  4: ["and"],
+  3: ["or", "xor"],
 };
 
 module.exports = grammar({
   name: "nim",
 
-  word: $ => $.identifier,
   externals: $ => [
     $.comment,
-    $.comment_disable,
-    $._long_string_quote,
+    $._string_content,
+    $._long_string_content,
     $._layout_start,
     $._layout_end,
     $._invalid_layout,
-    $.layout_disable,
     $._line,
     $._line_elif,
     $._line_else,
@@ -89,8 +117,6 @@ module.exports = grammar({
     $._line_finally,
     $._line_of,
     $._line_do,
-    ":",
-    "=",
     $._binop10l,
     $._binop10r,
     $._binop9,
@@ -99,35 +125,76 @@ module.exports = grammar({
     $._binop6,
     $._binop5,
     $._binop2,
+    $._sigilop,
     $._binop1,
     $._binop0,
+    $._unaryop,
   ],
+
   extras: $ => [/[\n\r ]+/, $.comment],
-  inline: $ => [$._maybe_colon_expression, $._maybe_equal_expression],
-  supertypes: $ => [
-    $._simple_expression,
-    $._expression,
-    $._simple_statement,
-    $._statement,
-  ],
-  conflicts: $ => [
-    [$._command_expression, $.unary_expression, $.binary_expression],
-    [$._command_expression, $.binary_expression],
+  inline: $ => [
+    $._maybe_colon_expression,
+    $._maybe_equal_expression,
+    $._maybe_colon_equal_expression,
+    $._symbol,
+    $._basic_sigil_expression,
   ],
   precedences: $ => [
-    [$._symbol, $._simple_expression], // break conflict between var type and var section
-    [$.object_declaration, $.object_type],
+    [
+      "sigil",
+      "suffix",
+      "unary",
+      "type_modifiers",
+      "binary_10",
+      "binary_9",
+      "binary_8",
+      "binary_7",
+      "binary_6",
+      "binary_5",
+      "binary_4",
+      "binary_3",
+      "binary_2",
+      "binary_1",
+      "binary_0",
+      $._expression_with_colon_block_call,
+      // $.equal_expression,
+    ],
+    ["call"],
+    ["sigil", $._basic_expression],
+    ["suffix", $._expression_no_unary_word],
+    [$._expression_no_unary_word, $._call_colon_block_expression],
+    // [$._simple_expression_no_unary_word, $._basic_command],
+    // [$._simple_expression_no_unary_word, $.pragma_block],
+    // [$._simple_expression, $._expression_no_unary_word],
+    // [$._simple_expression, $._expression],
+    [$._expression_no_unary_word, $._basic_command],
+    [$._expression, $._command_first_argument],
+    [$._basic_command, $._command_colon_expression_arguments],
+    [$._basic_command, $._command_statement_arguments],
+    [$._call_do_block_expression, $._expression_no_unary_word],
+    // [$._call_colon_expression, $._simple_expression_no_unary_word],
+    // [$._call_do_expression, $._simple_expression_no_unary_word],
+    [$._basic_call, $._expression_no_unary_word],
+    [$.pragma_block, $._expression_no_unary_word],
+    [$.parenthesized, $._expression_with_colon_block_call],
+    // [$._command_do_expression_arguments, $._basic_command],
+    // [$._call_colon_expression_arguments, $._basic_call],
+    // [$._call_do_expression_arguments, $._basic_call],
+    [$.proc_expression, $.proc_type],
+    [$.iterator_expression, $.iterator_type],
+    [$._unary_sigil_argument_list, $._basic_expression],
+    [$._unary_argument_list, $.infix_expression],
   ],
+  supertypes: $ => [$._statement, $._expression],
+  word: $ => $.identifier,
 
   rules: {
-    source_file: $ => alias($.statement_list, "source"),
+    source_file: $ => $._block_statement_list,
 
     statement_list: $ =>
-      choice(
-        prec.right(sep1($._simple_statement, ";")),
-        $._block_statement_list
-      ),
+      choice($._block_statement_list, $._line_statement_list),
 
+    _line_statement_list: $ => prec.right(sep1($._statement, ";")),
     _block_statement_list: $ =>
       seq(
         $._layout_start,
@@ -137,1076 +204,621 @@ module.exports = grammar({
 
     _statement: $ =>
       choice(
-        $._expression,
-        $._declaration,
-        alias($._command_call_block, $.call),
-        $._simple_statement,
-        $.bind_statement,
-        $.mixin_statement,
-        $.while,
-        $.for,
-        $.static_statement
+        $._expression_with_colon_block_call,
+        // $.import_statement,
+        // $.export_statement,
+        // $.import_from_statement,
+        // $.include_statement,
+        // $.discard_statement,
+        // $.return_statement,
+        // $.raise_statement,
+        // $.yield_statement,
+        // $.break_statement,
+        // $.continue_statement,
+        // $.assembly_statement,
+        // $.bind_statement,
+        // $.mixin_statement,
+        alias($._command_statement, $.call)
       ),
 
-    bind_statement: $ =>
-      seq(
-        ignoreStyle("bind"),
-        sep1(choice($._symbol, $.qualified_symbol), ",")
-      ),
-
-    mixin_statement: $ =>
-      seq(
-        ignoreStyle("mixin"),
-        sep1(choice($._symbol, $.qualified_symbol), ",")
-      ),
-
-    qualified_symbol: $ =>
-      prec.left(
-        Precedence.Dot,
-        seq(
-          field("left", $._symbol),
-          field("operator", "."),
-          field("right", $._symbol)
-        )
-      ),
-
-    while: $ =>
-      seq(
-        ignoreStyle("while"),
-        field("condition", $._simple_expression),
-        ":",
-        field("body", $.statement_list)
-      ),
-
-    for: $ =>
-      seq(
-        ignoreStyle("for"),
-        field("left", $.symbol_declaration_list),
-        ignoreStyle("in"),
-        field("right", $._simple_expression),
-        ":",
-        field("body", $.statement_list)
-      ),
-
-    static_statement: $ =>
-      seq(ignoreStyle("static"), ":", field("body", $.statement_list)),
-
-    _simple_statement: $ =>
-      prec(
-        -1,
-        choice(
-          $._simple_expression,
-          alias($._command_call, $.call),
-          alias($._pragma, $.pragma),
-          $.import_statement,
-          $.export_statement,
-          $.import_from_statement,
-          $.include_statement,
-          $.discard_statement,
-          $.assembly_statement,
-          $.break_statement,
-          $.continue_statement,
-          $.return_statement,
-          $.raise_statement,
-          $.yield_statement
-        )
-      ),
-
-    import_statement: $ =>
+    /* Command call */
+    _command_statement: $ => Templates.call($, $._command_statement_arguments),
+    _command_statement_arguments: $ =>
       prec.right(
         seq(
-          ignoreStyle("import"),
-          $._simple_expression,
+          $._command_first_argument,
+          repeat1(prec.right(seq(",", $._maybe_equal_expression))),
           optional(
-            choice(
-              repeat1(seq(",", $._simple_expression)),
-              seq(
-                ignoreStyle("except"),
-                alias($.expression_list, $.import_exception_list)
-              )
-            )
+            choice($._call_colon_block_arguments, $._call_do_block_arguments)
           )
         )
       ),
 
-    export_statement: $ =>
-      prec.right(
-        seq(
-          ignoreStyle("export"),
-          $._simple_expression,
-          optional(
-            choice(
-              repeat1(seq(",", $._simple_expression)),
-              seq(
-                ignoreStyle("except"),
-                alias($.expression_list, $.export_exception_list)
-              )
-            )
-          )
-        )
-      ),
-
+    /* Statements */
+    import_statement: $ => Templates.import($, keyword("import")),
+    export_statement: $ => Templates.import($, keyword("export")),
+    except_clause: $ => seq(keyword("except"), $.expression_list),
     import_from_statement: $ =>
       seq(
-        ignoreStyle("from"),
-        field("module", $._simple_expression),
-        ignoreStyle("import"),
-        alias($.expression_list, $.import_symbol_list)
+        keyword("from"),
+        field("module", $._expression),
+        keyword("import"),
+        field("symbols", $.expression_list)
       ),
-
-    include_statement: $ =>
-      seq(ignoreStyle("include"), alias($.expression_list, "include files")),
-
-    discard_statement: $ =>
-      prec.left(seq(ignoreStyle("discard"), optional($._expression))),
-
+    include_statement: $ => seq(keyword("include"), $.expression_list),
+    discard_statement: $ => Templates.return_like($, keyword("discard")),
+    return_statement: $ => Templates.return_like($, keyword("return")),
+    raise_statement: $ => Templates.return_like($, keyword("raise")),
+    yield_statement: $ => Templates.return_like($, keyword("yield")),
+    break_statement: $ => Templates.return_like($, keyword("break")),
+    continue_statement: $ => Templates.return_like($, keyword("continue")),
     assembly_statement: $ =>
       seq(
-        ignoreStyle("asm"),
+        keyword("asm"),
         optional(field("pragma", $._pragma)),
         $.string_literal
       ),
-
-    break_statement: $ =>
-      prec.left(
-        seq(ignoreStyle("break"), optional(field("label", $._expression)))
-      ),
-
-    continue_statement: $ =>
-      prec.left(
-        seq(ignoreStyle("continue"), optional(field("label", $._expression)))
-      ),
-
-    return_statement: $ =>
-      prec.left(seq(ignoreStyle("return"), optional($._expression))),
-
-    raise_statement: $ =>
-      prec.left(seq(ignoreStyle("raise"), optional($._expression))),
-
-    yield_statement: $ =>
-      prec.left(seq(ignoreStyle("yield"), optional($._expression))),
-
-    _declaration: $ =>
-      choice(
-        $.const_section,
-        $.let_section,
-        $.type_section,
-        $.var_section,
-        $.proc_declaration,
-        $.func_declaration,
-        $.method_declaration,
-        $.iterator_declaration,
-        $.macro_declaration,
-        $.template_declaration,
-        $.converter_declaration
-      ),
-
-    proc_declaration: $ => seq(ignoreStyle("proc"), $._routine_declaration),
-    func_declaration: $ => seq(ignoreStyle("func"), $._routine_declaration),
-    method_declaration: $ => seq(ignoreStyle("method"), $._routine_declaration),
-    iterator_declaration: $ =>
-      seq(ignoreStyle("iterator"), $._routine_declaration),
-    macro_declaration: $ => seq(ignoreStyle("macro"), $._routine_declaration),
-    template_declaration: $ =>
-      seq(ignoreStyle("template"), $._routine_declaration),
-    converter_declaration: $ =>
-      seq(ignoreStyle("converter"), $._routine_declaration),
-
-    _routine_declaration: $ =>
-      seq(
-        field("name", $._maybe_exported_symbol),
-        optional(field("rewrite_pattern", $.term_rewriting_pattern)),
-        optional($._generic_parameter_list),
-        optional(
-          seq("(", optional(field("parameters", $.parameter_list)), ")")
-        ),
-        optional(seq(":", field("return_type", $._simple_expression))),
-        optional(field("pragma", $._pragma)),
-        optional(seq("=", field("body", $.statement_list)))
-      ),
-
-    term_rewriting_pattern: $ => seq("{", $._statement, "}"),
-
-    type_section: $ =>
-      seq(
-        ignoreStyle("type"),
-        choice(
-          $.type_declaration,
-          seq(
-            $._layout_start,
-            repeat1(seq($._line, $.type_declaration)),
-            $._layout_end
-          )
-        )
-      ),
-
-    type_declaration: $ =>
-      seq($.type_symbol_declaration, "=", $._type_definition),
-
-    type_symbol_declaration: $ =>
+    bind_statement: $ =>
       prec.right(
-        seq(
-          $._maybe_exported_symbol,
-          optional($._generic_parameter_list),
-          optional(field("pragma", $._pragma))
-        )
+        seq(keyword("bind"), sep1(choice($._symbol, $.qualified_symbol), ","))
       ),
-
-    _generic_parameter_list: $ =>
-      seq("[", alias($.parameter_list, $.generic_parameter_list), "]"),
-
-    parameter_list: $ =>
-      sep1(
-        alias($.variable_declaration, $.parameter_declaration),
-        token(choice(",", ";"))
-      ),
-
-    _type_definition: $ =>
-      choice(
-        $._simple_expression,
-        $._object_like_declaration,
-        alias($._distinct_declaration, $.distinct_type),
-        alias($._pointer_declaration, $.pointer_type),
-        alias($._ref_declaration, $.ref_type),
-        $.concept_declaration,
-        $.enum_declaration
-      ),
-
-    concept_declaration: $ =>
-      seq(
-        ignoreStyle("concept"),
-        optional(
-          field(
-            "parameters",
-            alias($._concept_parameter_list, $.parameter_list)
-          )
-        ),
-        optional(seq(ignoreStyle("of"), field("refines", $.refinement_list))),
-        field("body", alias($._block_statement_list, $.statement_list))
-      ),
-
-    _concept_parameter_list: $ => sep1($._concept_parameter, ","),
-
-    _concept_parameter: $ =>
-      choice(
-        $._symbol,
-        alias($._concept_pointer_parameter, $.pointer_parameter),
-        alias($._concept_ref_parameter, $.ref_parameter),
-        alias($._concept_static_parameter, $.static_parameter),
-        alias($._concept_type_parameter, $.type_parameter),
-        alias($._concept_var_parameter, $.var_parameter)
-      ),
-
-    _concept_pointer_parameter: $ => seq(ignoreStyle("ptr"), $._symbol),
-    _concept_ref_parameter: $ => seq(ignoreStyle("ref"), $._symbol),
-    _concept_static_parameter: $ => seq(ignoreStyle("static"), $._symbol),
-    _concept_type_parameter: $ => seq(ignoreStyle("type"), $._symbol),
-    _concept_var_parameter: $ => seq(ignoreStyle("var"), $._symbol),
-
-    refinement_list: $ => sep1($._simple_expression, ","),
-
-    enum_declaration: $ =>
-      seq(
-        ignoreStyle("enum"),
-        choice(
-          repeat1(seq($.enum_field_declaration, optional(","))),
-          seq(
-            $._layout_start,
-            repeat1(seq($._line, $.enum_field_declaration, optional(","))),
-            $._layout_end
-          )
-        )
-      ),
-
-    enum_field_declaration: $ =>
-      seq(
-        $.symbol_declaration,
-        optional(seq("=", field("value", $._simple_expression)))
-      ),
-
-    _object_like_declaration: $ =>
-      choice($.object_declaration, alias($._tuple_declaration, $.tuple_type)),
-
-    _distinct_declaration: $ =>
-      seq(ignoreStyle("distinct"), choice($._object_like_declaration)),
-
-    _pointer_declaration: $ =>
-      seq(ignoreStyle("ptr"), choice($._object_like_declaration)),
-
-    _ref_declaration: $ =>
-      seq(ignoreStyle("ref"), choice($._object_like_declaration)),
-
-    object_declaration: $ =>
-      seq(
-        ignoreStyle("object"),
-        optional(field("pragma", $._pragma)),
-        optional(
-          seq(ignoreStyle("of"), field("inherits", $._simple_expression))
-        ),
-        optional($.field_declaration_list)
-      ),
-
-    _tuple_declaration: $ =>
-      seq(
-        ignoreStyle("tuple"),
-        $._layout_start,
-        repeat1(
-          seq($._line, alias($.variable_declaration, $.field_declaration))
-        ),
-        $._layout_end
-      ),
-
-    field_declaration_list: $ =>
-      seq(
-        $._layout_start,
-        repeat1(seq($._line, $._object_field_declaration)),
-        $._layout_end
-      ),
-
-    _object_field_declaration: $ =>
-      choice(
-        alias($.variable_declaration, $.field_declaration),
-        $.conditional_declaration,
-        $.variant_declaration,
-        $.nil_literal,
-        $.discard_statement
-      ),
-
-    conditional_declaration: $ =>
+    mixin_statement: $ =>
       prec.right(
-        seq(
-          ignoreStyle("when"),
-          field("condition", $._simple_expression),
-          ":",
-          field("consequence", $.field_declaration_list),
-          repeat(
-            field(
-              "alternative",
-              seq(
-                optional($._line_elif),
-                alias($._object_elif_branch, $.elif_branch)
-              )
-            )
-          ),
-          optional(
-            field(
-              "alternative",
-              seq(
-                optional($._line_else),
-                alias($._variant_else_branch, $.else_branch)
-              )
-            )
-          )
-        )
+        seq(keyword("mixin"), sep1(choice($._symbol, $.qualified_symbol), ","))
       ),
 
-    _object_elif_branch: $ =>
-      seq(
-        ignoreStyle("elif"),
-        field("condition", $._simple_expression),
-        ":",
-        field("consequence", $.field_declaration_list)
-      ),
-
-    variant_declaration: $ =>
-      seq(
-        ignoreStyle("case"),
-        $.variant_descriminator_declaration,
-        optional(":"),
-        choice(
-          $._variant_body,
-          seq($._layout_start, $._variant_body, $._layout_end)
-        )
-      ),
-
-    _variant_body: $ =>
-      repeat1(
-        choice(
-          seq($._line_of, alias($._variant_of_branch, $.of_branch)),
-          seq($._line_else, alias($._variant_else_branch, $.else_branch))
-        )
-      ),
-
-    _variant_of_branch: $ =>
-      seq(
-        ignoreStyle("of"),
-        field("values", $.expression_list),
-        ":",
-        $.field_declaration_list
-      ),
-
-    _variant_else_branch: $ =>
-      seq(ignoreStyle("else"), ":", $.field_declaration_list),
-
-    variant_descriminator_declaration: $ =>
-      prec.left(
-        seq(
-          $.symbol_declaration,
-          ":",
-          field("type", $._simple_expression),
-          optional(":")
-        )
-      ),
-
-    const_section: $ =>
-      seq(ignoreStyle("const"), $._variable_declaration_section),
-
-    let_section: $ => seq(ignoreStyle("let"), $._variable_declaration_section),
-
-    var_section: $ => seq(ignoreStyle("var"), $._variable_declaration_section),
-
-    _variable_declaration_section: $ =>
-      choice(
-        $.variable_declaration,
-        seq(
-          $._layout_start,
-          repeat1(seq($._line, $.variable_declaration)),
-          $._layout_end
-        )
-      ),
-
-    variable_declaration: $ =>
-      prec.right(
-        seq(
-          $.symbol_declaration_list,
-          optional(seq(":", field("type", $._simple_expression))),
-          optional(seq("=", field("value", $._expression)))
-        )
-      ),
-
-    symbol_declaration_list: $ =>
-      sep1(choice($.symbol_declaration, $.tuple_deconstruct_declaration), ","),
-
-    tuple_deconstruct_declaration: $ =>
-      seq("(", sep1($.symbol_declaration, ","), ")"),
-
-    symbol_declaration: $ =>
-      prec.right(
-        seq($._maybe_exported_symbol, optional(field("pragma", $._pragma)))
-      ),
-
-    _maybe_exported_symbol: $ =>
-      choice(field("name", $._symbol), $.exported_symbol),
-
-    exported_symbol: $ => seq(field("name", $._symbol), "*"),
-
-    _symbol: $ =>
-      seq(choice($.identifier, $.accent_quoted, $.blank_identifier)),
-
+    /* Expressions */
+    _expression_with_colon_block_call: $ =>
+      choice($._expression, alias($._call_with_colon_block, $.call)),
     _expression: $ =>
       choice(
-        alias($._block_call_expression, $.call),
-        $._simple_expression,
-        $.block,
-        $.case,
-        $.if,
-        $.pragma_block,
-        $.try,
-        $.when,
-        $.proc_expression,
-        $.func_expression,
-        $.iterator_expression
+        $._expression_no_unary_word,
+        alias($._unary_word_expression, $.unary_expression)
       ),
-
-    proc_expression: $ => seq(ignoreStyle("proc"), $._routine_expression),
-    func_expression: $ => seq(ignoreStyle("func"), $._routine_expression),
-    iterator_expression: $ =>
-      seq(ignoreStyle("iterator"), $._routine_expression),
-
-    _routine_expression: $ =>
-      seq(
-        "(",
-        optional(field("parameters", $.parameter_list)),
-        ")",
-        optional(seq(":", field("return_type", $._simple_expression))),
-        optional(field("pragma", $._pragma)),
-        optional(seq("=", field("body", $.statement_list)))
-      ),
-
-    try: $ =>
-      prec.right(
-        seq(
-          ignoreStyle("try"),
-          ":",
-          field("body", $.statement_list),
-          repeat1(
-            choice(
-              seq(optional($._line_except), $.except_branch),
-              seq(optional($._line_finally), $.finally_branch)
-            )
-          )
-        )
-      ),
-
-    case: $ =>
-      seq(
-        ignoreStyle("case"),
-        field("value", $._simple_expression),
-        optional(":"),
-        choice($._case_body, seq($._layout_start, $._case_body, $._layout_end))
-      ),
-
-    _case_body: $ =>
-      prec.left(
-        repeat1(
-          choice(
-            seq($._line_of, $.of_branch),
-            seq($._line_elif, $.elif_branch),
-            seq($._line_else, $.else_branch)
-          )
-        )
-      ),
-
-    when: $ =>
-      prec.right(
-        seq(
-          ignoreStyle("when"),
-          field("condition", $._simple_expression),
-          ":",
-          field("consequence", $.statement_list),
-          repeat(
-            choice(
-              field("alternative", seq(optional($._line_elif), $.elif_branch)),
-              field("alternative", seq(optional($._line_else), $.else_branch))
-            )
-          )
-        )
-      ),
-
-    if: $ =>
-      prec.right(
-        seq(
-          ignoreStyle("if"),
-          field("condition", $._simple_expression),
-          ":",
-          field("consequence", $.statement_list),
-          repeat(
-            choice(
-              field("alternative", seq(optional($._line_elif), $.elif_branch)),
-              field("alternative", seq(optional($._line_else), $.else_branch))
-            )
-          )
-        )
-      ),
-
-    block: $ =>
-      seq(
-        ignoreStyle("block"),
-        optional(field("label", $._simple_expression)),
-        ":",
-        field("body", $.statement_list)
-      ),
-
-    _simple_expression: $ =>
+    _expression_no_unary_word: $ =>
       choice(
-        $._literals,
-        $.accent_quoted,
-        $.binary_expression,
-        $.bracket,
-        $.bracket_expression,
-        alias($._simple_call_expression, $.call),
-        $.curly,
-        $.curly_expression,
-        $.dot_expression,
-        $.parenthesized_expression,
-        $.tuple,
-        $.tuple_type,
+        $._basic_expression,
+        $.infix_expression,
         $.object_type,
         $.distinct_type,
+        $.enum_type,
         $.pointer_type,
         $.ref_type,
-        $.var_type,
-        $.unary_expression,
-        $.identifier
+        $.out_type,
+        $.tuple_type,
+        $.proc_type,
+        $.iterator_type,
+        $.if,
+        $.when,
+        $.case,
+        $.try,
+        $.block,
+        $.pragma_block,
+        $.proc_expression,
+        $.func_expression,
+        $.iterator_expression,
+        alias($._call_expression, $.call),
+        alias($._unary_symbol_expression, $.unary_expression),
+        alias($._pragma, $.pragma)
+      ),
+    _basic_expression: $ =>
+      choice(
+        $._basic_sigil_expression,
+        alias($._basic_call, $.call),
+        alias($._unary_sigil_expression, $.unary_expression)
+      ),
+    _basic_sigil_expression: $ =>
+      choice(
+        $._literal,
+        $._symbol,
+        $.array_construction,
+        $.curly_construction,
+        $.tuple_construction,
+        $.cast,
+        $.parenthesized,
+        $.dot_expression,
+        $.bracket_expression,
+        $.curly_expression,
+        $.generalized_string
       ),
 
-    tuple_type: $ =>
-      prec.right(
-        seq(
-          ignoreStyle("tuple"),
-          optional(
+    infix_expression: $ => {
+      /** @param {RuleOrLiteral} op */
+      return choice(
+        .../** @type {[Rule, string, Function][]} */ ([
+          [$._binop10r, "binary_10", prec.right],
+          [$._binop10l, "binary_10", prec.left],
+          [$._binop9, "binary_9", prec.left],
+          [choice(...WordOperators[9].map(keyword)), "binary_9", prec.left],
+          [$._binop8, "binary_8", prec.left],
+          [$._binop7, "binary_7", prec.left],
+          [$._binop6, "binary_6", prec.left],
+          [$._binop5, "binary_5", prec.left],
+          [choice(...WordOperators[5].map(keyword)), "binary_5", prec.left],
+          [
+            choice(...WordOperators[4].filter(x => x != "not").map(keyword)),
+            "binary_4",
+            prec.left,
+          ],
+          [choice(...WordOperators[3].map(keyword)), "binary_3", prec.left],
+          [$._binop2, "binary_2", prec.left],
+          [$._binop1, "binary_1", prec.left],
+          [$._binop0, "binary_0", prec.left],
+        ]).map(([operator, precedence, precFn]) =>
+          precFn(
+            precedence,
             seq(
-              token.immediate("["),
-              sep1(
-                alias($.variable_declaration, $.field_declaration),
-                token(choice(",", ";"))
-              ),
-              "]"
-            )
-          )
-        )
-      ),
-
-    object_type: _ => ignoreStyle("object"),
-
-    distinct_type: $ =>
-      prec.right(seq(ignoreStyle("distinct"), $._simple_expression)),
-    pointer_type: $ =>
-      prec.right(seq(ignoreStyle("ptr"), $._simple_expression)),
-    ref_type: $ => prec.right(seq(ignoreStyle("ref"), $._simple_expression)),
-    var_type: $ => prec.right(seq(ignoreStyle("var"), $._simple_expression)),
-
-    pragma_block: $ => seq($._pragma, ":", field("body", $.statement_list)),
-
-    _pragma: $ =>
-      seq(
-        "{.",
-        alias($.argument_list, $.pragma_list),
-        token(choice(".}", "}"))
-      ),
-
-    _simple_call_expression: $ =>
-      choice($._parenthesized_call, $._command_expression),
-    _block_call_expression: $ => choice($._call_with_block, $._block_call),
-
-    _parenthesized_call: $ =>
-      prec(
-        Precedence.Suffix,
-        seq(
-          field("function", $._simple_expression),
-          seq(
-            token.immediate("("),
-            optional(field("arguments", $.argument_list)),
-            ")"
-          )
-        )
-      ),
-
-    _call_with_block: $ =>
-      prec(
-        1,
-        seq(
-          $._simple_call_expression,
-          field("arguments", $.call_block_arguments)
-        )
-      ),
-
-    _block_call: $ =>
-      prec(
-        -10,
-        seq(
-          field("function", $._simple_expression),
-          field("arguments", $.call_block_arguments)
-        )
-      ),
-
-    _command_expression: $ =>
-      prec.left(
-        Precedence.Suffix,
-        seq(
-          field("function", $._simple_expression),
-          field("arguments", alias($._simple_expression, $.argument_list))
-        )
-      ),
-
-    _command_call: $ =>
-      seq(
-        field("function", $._simple_expression),
-        field("arguments", alias($._command_call_arguments, $.argument_list))
-      ),
-
-    _command_call_block: $ =>
-      seq($._command_call, field("arguments", $.call_block_arguments)),
-
-    _command_call_arguments: $ =>
-      seq(
-        $._simple_expression,
-        repeat1(prec.right(seq(",", $._maybe_equal_expression)))
-      ),
-
-    call_block_arguments: $ =>
-      prec.right(
-        -10,
-        seqReq1(
-          seq(
-            ":",
-            seqReq1(
-              $.statement_list,
-              repeat1(
-                seq(
-                  choice(
-                    seq($._line_of, $.of_branch),
-                    seq($._line_elif, $.elif_branch),
-                    seq($._line_else, $.else_branch),
-                    seq($._line_except, $.except_branch),
-                    seq($._line_finally, $.finally_branch)
+              field("left", $._expression),
+              field("operator", operator),
+              field("right", $._expression),
+              field(
+                "arguments",
+                optional(
+                  alias(
+                    choice(
+                      $._call_colon_block_arguments,
+                      $._call_do_block_arguments
+                    ),
+                    $.argument_list
                   )
                 )
               )
             )
+          )
+        )
+      );
+    },
+    _unary_word_expression: $ =>
+      prec.left(
+        "unary",
+        seq(
+          field(
+            "operator",
+            choice(...Object.values(WordOperators).flatMap(x => x.map(keyword)))
           ),
-          repeat1(seq(optional($._line_do), $.do_block))
+          field("arguments", $._unary_argument_list)
+        )
+      ),
+    _unary_symbol_expression: $ => {
+      /** @param {RuleOrLiteral} op */
+      return choice(
+        .../** @type {[Rule, string][]} */ ([
+          [$._unaryop, "unary"],
+          [$._sigilop, "sigil"],
+        ]).map(([operator, precedence]) =>
+          prec.left(
+            precedence,
+            seq(
+              field("operator", operator),
+              field("arguments", alias($._unary_argument_list, $.argument_list))
+            )
+          )
+        )
+      );
+    },
+    _unary_argument_list: $ =>
+      prec.right(
+        seq(
+          $._expression,
+          optional(
+            choice($._call_colon_block_arguments, $._call_do_block_arguments)
+          )
+        )
+      ),
+    _unary_sigil_expression: $ =>
+      prec.left(
+        "sigil",
+        seq(
+          field("operator", $._sigilop),
+          field(
+            "argument",
+            alias($._unary_sigil_argument_list, $.argument_list)
+          )
+        )
+      ),
+    _unary_sigil_argument_list: $ =>
+      prec.right(
+        seq(
+          $._basic_sigil_expression,
+          optional(
+            choice($._call_colon_block_arguments, $._call_do_block_arguments)
+          )
         )
       ),
 
-    do_block: $ =>
-      seq(
-        ignoreStyle("do"),
-        optional(
-          seq("(", optional(field("parameters", $.parameter_list)), ")")
-        ),
-        optional(seq("->", field("return_type", $._simple_expression))),
-        optional(field("pragma", $._pragma)),
-        ":",
-        field("body", $.statement_list)
+    /* Call expressions */
+    _call_with_colon_block: $ =>
+      choice(
+        $._call_colon_expression,
+        $._call_colon_block_expression,
+        $._command_colon_expression
+      ),
+    _call_colon_expression: $ =>
+      Templates.call($, $._call_colon_expression_arguments),
+    _call_colon_expression_arguments: $ =>
+      seq($._parenthesized_argument_list, $._call_colon_block_arguments),
+    _call_colon_block_expression: $ =>
+      Templates.call($, $._call_colon_block_arguments),
+    _command_colon_expression: $ =>
+      Templates.call($, $._command_colon_expression_arguments),
+    _command_colon_expression_arguments: $ =>
+      seq($._command_first_argument, $._call_colon_block_arguments),
+    _call_colon_block_arguments: $ =>
+      prec.right(
+        seq(
+          ":",
+          optional($.statement_list),
+          repeat(
+            choice(
+              seq($._line_of, $.of_branch),
+              seq($._line_elif, $.elif_branch),
+              seq($._line_else, $.else_branch),
+              seq($._line_except, $.except_branch),
+              seq($._line_finally, $.finally_branch),
+              seq($._line_do, $.do_block)
+            )
+          )
+        )
       ),
 
-    argument_list: $ =>
-      sep1(choice($._maybe_colon_expression, $._maybe_equal_expression), ","),
+    _call_expression: $ =>
+      choice(
+        $._basic_command,
+        $._call_do_expression,
+        $._call_do_block_expression,
+        $._command_do_expression
+      ),
+    _call_do_expression: $ =>
+      Templates.call($, $._call_do_expression_arguments),
+    _call_do_expression_arguments: $ =>
+      seq($._parenthesized_argument_list, $._call_do_block_arguments),
+    _call_do_block_expression: $ =>
+      Templates.call($, $._call_do_block_arguments),
+    _command_do_expression: $ =>
+      Templates.call($, $._command_do_expression_arguments),
+    _command_do_expression_arguments: $ =>
+      seq($._command_first_argument, $._call_do_block_arguments),
+    _call_do_block_arguments: $ =>
+      prec.right(
+        seq(
+          $.do_block,
+          repeat(
+            choice(
+              seq($._line_of, $.of_branch),
+              seq($._line_elif, $.elif_branch),
+              seq($._line_else, $.else_branch),
+              seq($._line_except, $.except_branch),
+              seq($._line_finally, $.finally_branch),
+              seq($._line_do, $.do_block)
+            )
+          )
+        )
+      ),
+    _basic_call: $ =>
+      prec.right("call", Templates.call($, $._parenthesized_argument_list)),
+    _basic_command: $ =>
+      prec.right("call", Templates.call($, $._command_first_argument)),
+    _command_first_argument: $ => $._expression_no_unary_word,
 
+    /* Conditionals */
+    if: $ => Templates.if($, keyword("if")),
+    when: $ => Templates.if($, keyword("when")),
+    case: $ =>
+      prec.right(
+        seq(
+          keyword("case"),
+          $._expression,
+          optional(":"),
+          repeat1(
+            choice(
+              seq($._line_of, $.of_branch),
+              seq($._line_elif, $.elif_branch),
+              seq($._line_else, $.else_branch)
+            )
+          )
+        )
+      ),
+    try: $ =>
+      prec.right(
+        seq(
+          keyword("try"),
+          ":",
+          field("body", $.statement_list),
+          repeat1(
+            choice(
+              seq($._line_except, $.except_branch),
+              seq($._line_finally, $.finally_branch)
+            )
+          )
+        )
+      ),
     of_branch: $ =>
       seq(
-        ignoreStyle("of"),
+        keyword("of"),
         field("values", $.expression_list),
         ":",
         $.statement_list
       ),
-
     elif_branch: $ =>
       seq(
-        ignoreStyle("elif"),
-        field("condition", $._simple_expression),
+        keyword("elif"),
+        field("condition", $._expression),
         ":",
         field("consequence", $.statement_list)
       ),
-
-    else_branch: $ => seq(ignoreStyle("else"), ":", $.statement_list),
-
+    else_branch: $ => seq(keyword("else"), ":", $.statement_list),
     except_branch: $ =>
       seq(
-        ignoreStyle("except"),
+        keyword("except"),
         optional(field("values", $.expression_list)),
         ":",
         $.statement_list
       ),
-
-    finally_branch: $ => seq(ignoreStyle("finally"), ":", $.statement_list),
-
-    expression_list: $ => sep1($._simple_expression, ","),
-
-    colon_expression: $ =>
+    finally_branch: $ => seq(keyword("finally"), ":", $.statement_list),
+    do_block: $ =>
       seq(
-        field("left", $._simple_expression),
+        keyword("do"),
+        optional(seq("(", $.parameter_declaration_list, ")")),
+        optional(seq("->", $._expression)),
         ":",
-        field("right", $._simple_expression)
+        field("body", $.statement_list)
       ),
-    equal_expression: $ =>
+
+    /* Structural */
+    block: $ =>
       seq(
-        field("left", $._simple_expression),
-        "=",
-        field("right", $._simple_expression)
+        keyword("block"),
+        optional(field("label", $._symbol)),
+        ":",
+        field("body", $.statement_list)
+      ),
+    pragma_block: $ => seq($._pragma, ":", field("body", $.statement_list)),
+
+    cast: $ =>
+      seq(
+        keyword("cast"),
+        field("type", optional(seq("[", $._expression, "]"))),
+        field("value", seq("(", $._maybe_colon_equal_expression, ")"))
       ),
 
-    _maybe_colon_expression: $ =>
-      choice($._simple_expression, $.colon_expression),
-    _maybe_equal_expression: $ =>
-      choice($._simple_expression, $.equal_expression),
-
-    tuple: $ =>
+    parenthesized: $ =>
       choice(
-        seq(
-          "(",
-          $._simple_expression,
-          ",",
-          optional(sep1($._maybe_colon_expression, ",")),
-          ")"
-        ),
-        seq(
-          "(",
-          $.colon_expression,
-          repeat(seq(",", $._maybe_colon_expression)),
-          ")"
-        )
+        seq("(", optional(";"), $.statement_list, ")"),
+        seq("(", $._expression, ")")
       ),
 
-    bracket: $ => seq("[", alias($.argument_list, "bracket list"), "]"),
-
-    curly: $ => seq("{", alias($.argument_list, "curly list"), "}"),
-
-    parenthesized_expression: $ => seq("(", $._expression, ")"),
-
+    /* Suffix expressions */
+    dot_expression: $ =>
+      prec(
+        "suffix",
+        seq(field("left", $._basic_expression), ".", field("right", $._symbol))
+      ),
     bracket_expression: $ =>
-      prec.left(
-        Precedence.Suffix,
+      prec(
+        "suffix",
         seq(
-          field("left", $._simple_expression),
+          field("left", $._basic_expression),
           token.immediate("["),
-          field("right", $.argument_list),
+          field("right", alias($._argument_list, $.argument_list)),
           "]"
         )
       ),
-
     curly_expression: $ =>
-      prec.left(
-        Precedence.Suffix,
+      prec(
+        "suffix",
         seq(
-          field("left", $._simple_expression),
+          field("left", $._basic_expression),
           token.immediate("{"),
-          field("right", $.argument_list),
+          field("right", alias($._argument_list, $.argument_list)),
           "}"
         )
       ),
+    qualified_symbol: $ =>
+      seq(field("left", $._symbol), ".", field("right", $._symbol)),
 
-    dot_expression: $ =>
-      prec.left(
-        Precedence.Dot,
+    /* Routine expressions */
+    proc_expression: $ => Templates.proc_expr($, keyword("proc")),
+    func_expression: $ => Templates.proc_expr($, keyword("func")),
+    iterator_expression: $ => Templates.proc_expr($, keyword("iterator")),
+
+    /* Type expressions */
+    object_type: () => keyword("object"),
+    enum_type: () => keyword("enum"),
+    distinct_type: $ =>
+      prec("type_modifiers", seq(keyword("distinct"), $._expression)),
+    pointer_type: $ =>
+      prec("type_modifiers", seq(keyword("ptr"), $._expression)),
+    ref_type: $ => prec("type_modifiers", seq(keyword("ref"), $._expression)),
+    var_type: $ => prec("type_modifiers", seq(keyword("var"), $._expression)),
+    out_type: $ => prec("type_modifiers", seq(keyword("out"), $._expression)),
+    tuple_type: $ =>
+      prec.right(
+        seq(keyword("tuple"), optional(seq("[", $.field_declaration_list, "]")))
+      ),
+    proc_type: $ => seq(keyword("proc"), $._routine_type_tail),
+    iterator_type: $ => seq(keyword("iterator"), $._routine_type_tail),
+    _routine_type_tail: $ =>
+      prec.right(
         seq(
-          field("left", $._simple_expression),
-          field("operator", "."),
-          field("right", $._simple_expression)
+          "(",
+          $.parameter_declaration_list,
+          ")",
+          optional(seq(":", $._expression)),
+          optional($._pragma)
         )
       ),
 
-    unary_expression: $ => {
-      /** @param {RuleOrLiteral} op */
-      const unaryExp = op => seq(op, field("argument", $._simple_expression));
-      return choice(
-        ...[
-          $._wordop9,
-          $._wordop5,
-          $._wordop4,
-          $._wordop3,
-          // Avoid precedence clashing with of_branch
-          ignoreStyle("of"),
-          // Avoid precedence clashing with import_from
-          ignoreStyle("from"),
-          ignoreStyle("not"),
-        ].map(token => prec.left(unaryExp(token))),
-        prec.left(
-          Precedence.Unary,
-          unaryExp(
-            token(
-              seq(
-                choice(...OperatorChars.filter(x => x != "@" && x != ":")),
-                repeat(choice(...OperatorChars))
-              )
-            )
-          )
-        ),
-        prec.left(
-          Precedence.Sigil,
-          unaryExp(token(seq("@", repeat(choice(...OperatorChars)))))
-        )
-      );
-    },
-
-    binary_expression: $ => {
-      /** @param {RuleOrLiteral} op */
-      const binExp = op =>
+    /* Literal construction */
+    array_construction: $ =>
+      seq("[", optional(sep1($._maybe_colon_equal_expression, ",")), "]"),
+    curly_construction: $ =>
+      choice(
+        seq("{", sep1($._maybe_colon_equal_expression, ","), "}"),
+        seq("{", optional(":"), "}")
+      ),
+    tuple_construction: $ =>
+      choice(
+        seq("(", optional($.colon_expression), ")"),
         seq(
-          field("left", $._simple_expression),
-          field("operator", op),
-          field("right", $._simple_expression)
-        );
+          "(",
+          $._maybe_colon_expression,
+          repeat1(seq(",", optional($._maybe_colon_expression))),
+          ")"
+        )
+      ),
+    generalized_string: $ =>
+      seq(
+        choice($.identifier, $.dot_expression),
+        alias($._generalized_string_literal, $.string_literal)
+      ),
+    _generalized_string_literal: $ =>
+      choice(
+        seq(token.immediate('"""'), $._long_string_body),
+        RawStringLiteral
+      ),
+    _pragma: $ => seq("{.", alias($._argument_list, $.pragma_list), /\.?\}/),
 
-      return choice(
-        .../** @type {[Rule, number][]} */ ([
-          [$._binop10l, Precedence.Op10],
-          [$._binop9, Precedence.Op9],
-          [$._wordop9, Precedence.Op9],
-          [$._binop8, Precedence.Op8],
-          [$._binop7, Precedence.Op7],
-          [$._binop6, Precedence.Op6],
-          [$._binop5, Precedence.Op5],
-          [$._wordop5, Precedence.Op5],
-          [ignoreStyle("from"), Precedence.Op5],
-          [ignoreStyle("of"), Precedence.Op5],
-          [$._wordop4, Precedence.Op4],
-          [$._wordop3, Precedence.Op3],
-          [$._binop2, Precedence.Op2],
-          [$._binop1, Precedence.Op1],
-          [$._binop0, Precedence.Op0],
-        ]).map(([operator, precedence]) =>
-          prec.left(precedence, binExp(operator))
-        ),
-        prec.right(Precedence.Op10, binExp($._binop10r))
-      );
-    },
+    /* Supporting expressions */
+    _parenthesized_argument_list: $ =>
+      seq(token.immediate("("), optional($._argument_list), ")"),
+    _maybe_colon_expression: $ => choice($._expression, $.colon_expression),
+    _maybe_equal_expression: $ => choice($._expression, $.equal_expression),
+    _maybe_colon_equal_expression: $ =>
+      choice($._expression, $.colon_expression, $.equal_expression),
+    _argument_list: $ => sep1($._maybe_colon_equal_expression, ","),
+    colon_expression: $ =>
+      seq(field("left", $._expression), ":", field("right", $._expression)),
+    equal_expression: $ =>
+      prec.right(
+        seq(field("left", $._expression), "=", field("right", $._expression))
+      ),
+    expression_list: $ =>
+      prec.right(
+        seq($._expression, repeat(prec.right(seq(",", $._expression))))
+      ),
 
-    _wordop9: _ =>
-      token(choice(...["div", "mod", "shl", "shr"].map(ignoreStyle))),
-    _wordop5: _ =>
-      token(choice(...["in", "notin", "is", "isnot", "as"].map(ignoreStyle))),
-    _wordop4: _ => ignoreStyle("and"),
-    _wordop3: _ => token(choice(...["or", "xor"].map(ignoreStyle))),
+    /* Symbol/identifier declaration */
+    parameter_declaration_list: $ =>
+      sep1(
+        alias($._identifier_declaration, $.parameter_declaration),
+        choice(",", ";")
+      ),
+    field_declaration_list: $ =>
+      sep1(
+        alias($._identifier_declaration, $.field_declaration),
+        choice(",", ";")
+      ),
+    _identifier_declaration: $ =>
+      seq(
+        $.symbol_declaration_list,
+        field("type", optional(seq(":", $._expression))),
+        field("value", optional(seq("=", $._expression_with_colon_block_call)))
+      ),
+    symbol_declaration_list: $ =>
+      prec.right(
+        sep1(choice($.symbol_declaration, $.tuple_deconstruct_declaration), ",")
+      ),
+    tuple_deconstruct_declaration: $ =>
+      seq("(", sep1($.symbol_declaration, ","), ")"),
+    symbol_declaration: $ =>
+      seq(
+        field("name", $._symbol),
+        optional($.export_marker),
+        optional($._pragma)
+      ),
+    export_marker: () => "*",
 
-    _literals: $ =>
+    /* Literals */
+    _literal: $ =>
       choice(
         $.boolean_literal,
-        $.char_literal,
-        $.custom_numeric_literal,
-        $.float_literal,
-        $.generalized_string_literal,
-        $.integer_literal,
         $.nil_literal,
+        $.integer_literal,
+        $.float_literal,
+        $.custom_numeric_literal,
+        $.char_literal,
         $.string_literal
       ),
 
-    boolean_literal: _ =>
-      token(
+    /* "boolean" literals doesn't exist in the grammar, but these are
+     * useful to keep around. */
+    boolean_literal: () =>
+      choice(keyword("true"), keyword("false"), keyword("on"), keyword("off")),
+    nil_literal: () => keyword("nil"),
+
+    integer_literal: () =>
+      token(seq(NumericLiteral, optional(/'?[iIuU](8|16|32|64)|[uU]/))),
+
+    float_literal: () => {
+      const FloatSuffix = /'?[fFdD](32|64|128)?/;
+
+      return token(
         choice(
-          ignoreStyle("true"),
-          ignoreStyle("false"),
-          ignoreStyle("on"),
-          ignoreStyle("off")
-        )
-      ),
-
-    char_literal: $ =>
-      seq(
-        "'",
-        choice(
-          token.immediate(/[^\x00-\x1f\\]/),
-          $._backslash_literal,
-          alias($._char_escape_sequence, $.escape_sequence)
-        ),
-        token.immediate("'")
-      ),
-
-    _backslash_literal: _ => token.immediate("\\\\"),
-
-    _char_escape_sequence: _ =>
-      token.immediate(
-        seq("\\", choice(/[rcnlftv\\"'abe]/, /\d+/, /x[0-9a-fA-F]{2}/))
-      ),
-
-    integer_literal: $ =>
-      seq(
-        $._numeric_literal,
-        optional(
-          token.immediate(
-            seq(optional("'"), choice(/[uU]/, /[iIuU](8|16|32|64)/))
-          )
-        )
-      ),
-
-    float_literal: $ => {
-      const FloatSuffix = /[fFdD](32|64|128)?/;
-      const Apostrophe = optional(token.immediate("'"));
-
-      return choice(
-        seq($._numeric_literal, token.immediate(seq(Apostrophe, FloatSuffix))),
-        seq(
-          $._decimal_float_literal,
-          optional(token.immediate(seq(Apostrophe, FloatSuffix)))
+          seq(NumericLiteral, FloatSuffix),
+          seq(DecimalFloatLiteral, optional(FloatSuffix))
         )
       );
     },
 
-    custom_numeric_literal: $ =>
-      seq(
-        choice($._numeric_literal, $._decimal_float_literal),
-        field("function", alias($._custom_numeric_suffix, $.identifier))
-      ),
+    custom_numeric_literal: () =>
+      token(seq(choice(NumericLiteral, DecimalFloatLiteral), "'", Identifier)),
 
-    _custom_numeric_suffix: _ => token.immediate(seq("'", Identifier)),
-
-    _numeric_literal: _ =>
-      token(
-        seq(
-          optional("-"),
-          choice(
-            DecimalLiteral,
-            seq(/0[xX]/, sep1(/[0-9a-fA-F]+/, "_")),
-            seq("0o", sep1(/[0-7]+/, "_")),
-            seq(/0[bB]/, sep1(/[01]+/, "_"))
-          )
-        )
-      ),
-
-    _decimal_float_literal: _ =>
-      token(
-        seq(
-          optional("-"),
-          DecimalLiteral,
-          seqReq1(seq(".", DecimalLiteral), seq(/[eE][+-]?/, DecimalLiteral))
-        )
-      ),
-
-    nil_literal: _ => ignoreStyle("nil"),
+    char_literal: () =>
+      token(seq("'", choice(/[^\\']/, seq("\\", CharEscapeSequence)), "'")),
 
     string_literal: $ =>
       choice(
-        $._long_string_literal,
         $._interpreted_string_literal,
-        $._raw_string_literal
+        $._raw_string_literal,
+        $._long_string_literal
       ),
 
     _interpreted_string_literal: $ =>
       seq(
         '"',
-        repeat(
-          choice(
-            token.immediate(/[^\n\r"\\]+/),
-            $.comment_disable,
-            alias($._string_escape_sequence, $.escape_sequence)
-          )
-        ),
+        repeat(choice($._string_content, $.escape_sequence)),
         token.immediate('"')
       ),
 
-    _string_escape_sequence: $ =>
-      choice(
-        $._char_escape_sequence,
-        token.immediate("\\p"),
-        token.immediate(
-          seq("\\u", choice(/[0-9a-fA-F]{4}/, /\{[0-9a-fA-F]+\}/))
-        )
-      ),
-
-    _raw_string_content: _ =>
-      token.immediate(
+    escape_sequence: () =>
+      token(
         seq(
-          /[^\n\r"]+/,
-          repeat(seq('""', optional(token.immediate(/[^\n\r"]+/))))
+          "\\",
+          choice(CharEscapeSequence, "p", /u([0-9a-fA-F]{4}|\{[0-9a-fA-F]+\})/)
         )
       ),
 
-    _raw_string_literal: $ =>
-      seq('r"', optional($._raw_string_content), token.immediate('"')),
+    _raw_string_literal: () => token(seq(/[rR]/, RawStringLiteral)),
 
-    _long_string_literal: $ =>
-      seq(/r?"""/, optional($._long_string_content), token.immediate('"""')),
+    _long_string_literal: $ => seq(/[rR]?"""/, $._long_string_body),
 
-    _long_string_content: $ =>
-      repeat1(
-        choice(
-          token.immediate(/[^"]+/),
-          alias($._long_string_quote, '"'),
-          $.comment_disable,
-          $.layout_disable
-        )
-      ),
+    _long_string_body: $ =>
+      seq(repeat($._long_string_content), token.immediate('"""')),
 
-    generalized_string_literal: $ =>
-      choice($._generalized_short_string, $._generalized_long_string),
-
-    _generalized_short_string: $ =>
-      seq(
-        field("function", $.identifier),
-        token.immediate('"'),
-        optional($.comment_disable),
-        optional($._raw_string_content),
-        optional($.comment_disable),
-        token.immediate('"')
-      ),
-
-    _generalized_long_string: $ =>
-      seq(
-        field("function", $.identifier),
-        token.immediate('"""'),
-        optional($._long_string_content),
-        token.immediate('"""')
-      ),
-
+    /* Identifiers and related shenanigans */
+    _symbol: $ => choice($.accent_quoted, $.identifier),
     accent_quoted: $ =>
+      /* eslint-disable-next-line no-control-regex */
       seq("`", repeat1(alias(/[^\x00-\x1f\r\n\t` ]+/, $.identifier)), "`"),
-
-    blank_identifier: _ => "_",
-
-    identifier: _ => token(Identifier),
+    identifier: () => token(choice(Identifier, "_")),
   },
 });
+
+/**
+ * Produce a rule to match nim-style style insensitive identifiers
+ *
+ * @param {string} ident - The string to match style-insensitively.
+ */
+function keyword(ident) {
+  const regex = ident
+    .split("")
+    .map((letter, idx) =>
+      idx > 0 ? `[${letter.toLowerCase()}${letter.toUpperCase()}]` : letter
+    )
+    .join("_?");
+
+  return alias(token(prec(1, new RegExp(regex))), ident);
+}
 
 /**
  * Produce a rule that matches one or more occurance of a given rule.
@@ -1216,38 +828,4 @@ module.exports = grammar({
  */
 function sep1(rule, sep) {
   return seq(rule, repeat(seq(sep, rule)));
-}
-
-/**
- * Produce a rule to match nim-style style insensitive identifiers
- *
- * @param {string} ident - The string to match style-insensitively.
- */
-function ignoreStyle(ident) {
-  /** @type {RuleOrLiteral[]} */
-  let rules = [ident[0]];
-  for (let i = 1, L = ident.length; i < L; i++) {
-    const lower = ident[i].toLowerCase();
-    const upper = ident[i].toUpperCase();
-
-    rules.push(optional("_"), choice(lower, upper));
-  }
-
-  return token(prec(1, seq(...rules)));
-}
-
-/**
- * Produce a rule where the given rules matches in order, but only one of them has to match.
- *
- * @param {RuleOrLiteral[]} rules - The rules to be matched.
- */
-function seqReq1(...rules) {
-  /** @type {Rule[]} */
-  let result = [];
-
-  while (rules.length > 0) {
-    result.push(seq(rules.shift(), ...rules.map(x => optional(x))));
-  }
-
-  return choice(...result);
 }

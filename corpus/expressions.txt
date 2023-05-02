@@ -49,35 +49,50 @@ $a.b
 
 not a.c
 
+!a.u:b
+
 --------------------------------------------------------------------------------
 
 (source_file
   (unary_expression
-    argument: (identifier))
+    arguments: (argument_list
+      (identifier)))
   (unary_expression
-    argument: (identifier))
+    arguments: (argument_list
+      (identifier)))
   (unary_expression
-    argument: (identifier))
+    arguments: (argument_list
+      (identifier)))
   (unary_expression
-    argument: (dot_expression
-      left: (identifier)
-      right: (identifier)))
-  (dot_expression
-    left: (unary_expression
-      argument: (identifier))
-    right: (identifier))
-  (unary_expression
-    argument: (parenthesized_expression
+    arguments: (argument_list
       (dot_expression
         left: (identifier)
         right: (identifier))))
+  (dot_expression
+    left: (unary_expression
+      argument: (argument_list
+        (identifier)))
+    right: (identifier))
   (unary_expression
-    argument: (dot_expression
+    argument: (argument_list
+      (parenthesized
+        (dot_expression
+          left: (identifier)
+          right: (identifier)))))
+  (unary_expression
+    arguments: (dot_expression
       left: (identifier)
-      right: (identifier))))
+      right: (identifier)))
+  (unary_expression
+    arguments: (argument_list
+      (dot_expression
+        left: (identifier)
+        right: (identifier))
+      (statement_list
+        (identifier)))))
 
 ================================================================================
-Binary expressions
+Infix expressions
 ================================================================================
 
 1 + 100
@@ -92,8 +107,6 @@ abc %*% bcd
 
 a => b + c
 
-a = c / d
-
 z ==> xyz + def => cd
 
 $a + b
@@ -106,77 +119,95 @@ a += c >= b
 
 c of RootObj
 
+1 - x 1 - x
+
+1 + 1: 3
+else: 4
+
 --------------------------------------------------------------------------------
 
 (source_file
-  (binary_expression
+  (infix_expression
     left: (integer_literal)
     right: (integer_literal))
-  (binary_expression
+  (infix_expression
     left: (identifier)
     right: (identifier))
-  (binary_expression
-    left: (binary_expression
+  (infix_expression
+    left: (infix_expression
       left: (integer_literal)
       right: (integer_literal))
-    right: (binary_expression
+    right: (infix_expression
       left: (integer_literal)
       right: (integer_literal)))
-  (binary_expression
+  (infix_expression
     left: (identifier)
     right: (identifier))
-  (binary_expression
+  (infix_expression
     left: (integer_literal)
-    right: (binary_expression
+    right: (infix_expression
       left: (integer_literal)
       right: (integer_literal)))
-  (binary_expression
+  (infix_expression
     left: (identifier)
-    right: (binary_expression
+    right: (infix_expression
       left: (identifier)
       right: (identifier)))
-  (binary_expression
-    left: (identifier)
-    right: (binary_expression
+  (infix_expression
+    left: (infix_expression
       left: (identifier)
-      right: (identifier)))
-  (binary_expression
-    left: (binary_expression
-      left: (identifier)
-      right: (binary_expression
+      right: (infix_expression
         left: (identifier)
         right: (identifier)))
     right: (identifier))
-  (binary_expression
+  (infix_expression
     left: (unary_expression
-      argument: (identifier))
+      arguments: (argument_list
+        (identifier)))
     right: (identifier))
-  (binary_expression
-    left: (binary_expression
-      left: (binary_expression
+  (infix_expression
+    left: (infix_expression
+      left: (infix_expression
         left: (integer_literal)
         right: (integer_literal))
-      right: (binary_expression
+      right: (infix_expression
         left: (integer_literal)
         right: (integer_literal)))
     right: (boolean_literal))
-  (binary_expression
-    left: (parenthesized_expression
-      (binary_expression
+  (infix_expression
+    left: (parenthesized
+      (infix_expression
         left: (integer_literal)
         right: (integer_literal)))
-    right: (parenthesized_expression
-      (binary_expression
+    right: (parenthesized
+      (infix_expression
         left: (integer_literal)
         right: (integer_literal))))
-  (binary_expression
+  (infix_expression
     left: (identifier)
-    right: (binary_expression
+    right: (infix_expression
       left: (identifier)
       right: (identifier)))
-  (binary_expression
+  (infix_expression
     left: (identifier)
-    right: (identifier)))
+    right: (identifier))
+  (infix_expression
+    left: (integer_literal)
+    right: (call
+      function: (identifier)
+      arguments: (argument_list
+        (infix_expression
+          left: (integer_literal)
+          right: (identifier)))))
+  (infix_expression
+    left: (integer_literal)
+    right: (integer_literal)
+    arguments: (argument_list
+      (statement_list
+        (integer_literal))
+      (else_branch
+        (statement_list
+          (integer_literal))))))
 
 ================================================================================
 Dot expressions
@@ -187,6 +218,10 @@ a.?b.c
 a.b .. c.d
 
 $a.b
+
+a.b"string"
+a.b "string"
+a.b#[]#"string"
 
 --------------------------------------------------------------------------------
 
@@ -206,7 +241,18 @@ $a.b
   (unary_expression
     argument: (dot_expression
       left: (identifier)
-      right: (identifier))))
+      right: (identifier)))
+  (generalized_string
+    (dot_expression
+      left: (identifier)
+      right: (identifier))
+    (string_literal))
+  (call
+    function: (dot_expression
+      left: (identifier)
+      right: (identifier))
+    arguments: (argument_list
+      (string_literal))))
 
 ================================================================================
 Bracket expressions
@@ -275,7 +321,9 @@ echo(foo("Calls"), "in", bar("Calls"))
 
 foo()
 
-bar()
+bar():
+  doX()
+  doY()
 
 foo():
   10 + 10
@@ -337,14 +385,23 @@ do: y
         arguments: (argument_list
           (string_literal)))))
   (call
-    function: (identifier))
-  (call
-    function: (identifier))
+    function: (identifier)
+    arguments: (argument_list))
   (call
     function: (identifier)
-    arguments: (call_block_arguments
+    arguments: (argument_list
       (statement_list
-        (binary_expression
+        (call
+          function: (identifier)
+          arguments: (argument_list))
+        (call
+          function: (identifier)
+          arguments: (argument_list)))))
+  (call
+    function: (identifier)
+    arguments: (argument_list
+      (statement_list
+        (infix_expression
           left: (integer_literal)
           right: (integer_literal))
         (identifier))
@@ -353,7 +410,7 @@ do: y
           (identifier)))))
   (call
     function: (identifier)
-    arguments: (call_block_arguments
+    arguments: (argument_list
       (of_branch
         values: (expression_list
           (integer_literal)
@@ -362,8 +419,7 @@ do: y
           (call
             function: (identifier)
             arguments: (argument_list
-              (identifier))
-            arguments: (call_block_arguments
+              (identifier)
               (statement_list
                 (identifier))
               (else_branch
@@ -371,9 +427,9 @@ do: y
                   (identifier)))))))))
   (call
     function: (identifier)
-    arguments: (call_block_arguments
+    arguments: (argument_list
       (do_block
-        parameters: (parameter_list
+        (parameter_declaration_list
           (parameter_declaration
             (symbol_declaration_list
               (symbol_declaration
@@ -381,14 +437,14 @@ do: y
               (symbol_declaration
                 name: (identifier)))
             type: (identifier)))
-        return_type: (identifier)
+        (identifier)
         body: (statement_list
-          (binary_expression
+          (infix_expression
             left: (identifier)
             right: (identifier))))))
   (call
     function: (identifier)
-    arguments: (call_block_arguments
+    arguments: (argument_list
       (do_block
         body: (statement_list
           (identifier)))
@@ -397,7 +453,7 @@ do: y
           (identifier)))))
   (call
     function: (identifier)
-    arguments: (call_block_arguments
+    arguments: (argument_list
       (statement_list
         (identifier))
       (do_block
@@ -429,6 +485,16 @@ foo x, y, z:
   x
 do:
   y
+
+foo x: y
+
+foo x: y
+else: foo
+
+foo x do: y
+else: foo
+
+echo 1 - foo(), foo
 
 --------------------------------------------------------------------------------
 
@@ -473,14 +539,13 @@ do:
               (identifier)))))))
   (call
     function: (identifier)
-    arguments: (call_block_arguments
+    arguments: (argument_list
       (statement_list
         (call
           function: (identifier)
           arguments: (argument_list
             (identifier)
-            (identifier))
-          arguments: (call_block_arguments
+            (identifier)
             (statement_list
               (call
                 function: (identifier)
@@ -505,13 +570,48 @@ do:
     arguments: (argument_list
       (identifier)
       (identifier)
-      (identifier))
-    arguments: (call_block_arguments
+      (identifier)
       (statement_list
         (identifier))
       (do_block
         body: (statement_list
-          (identifier))))))
+          (identifier)))))
+  (call
+    function: (identifier)
+    arguments: (argument_list
+      (identifier)
+      (statement_list
+        (identifier))))
+  (call
+    function: (identifier)
+    arguments: (argument_list
+      (identifier)
+      (statement_list
+        (identifier))
+      (else_branch
+        (statement_list
+          (identifier)))))
+  (call
+    function: (identifier)
+    arguments: (argument_list
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (do_block
+            body: (statement_list
+              (identifier)))
+          (else_branch
+            (statement_list
+              (identifier)))))))
+  (call
+    function: (identifier)
+    arguments: (argument_list
+      (infix_expression
+        left: (integer_literal)
+        right: (call
+          function: (identifier)
+          arguments: (argument_list)))
+      (identifier))))
 
 ================================================================================
 Block statements
@@ -1134,19 +1234,35 @@ y, z, 10,
 
 100]
 
+[a = b, c: d]
+
+[]
+[[a]]
+
 --------------------------------------------------------------------------------
 
 (source_file
-  (bracket
+  (array_construction
     (identifier)
     (identifier)
     (identifier))
-  (bracket
+  (array_construction
     (identifier)
     (identifier)
     (identifier)
     (integer_literal)
-    (integer_literal)))
+    (integer_literal))
+  (array_construction
+    (equal_expression
+      (identifier)
+      (identifier))
+    (colon_expression
+      (identifier)
+      (identifier)))
+  (array_construction)
+  (array_construction
+    (array_construction
+      (identifier))))
 
 ================================================================================
 Set/Table construction
@@ -1156,18 +1272,103 @@ Set/Table construction
 
 {a, b, c, d}
 
+{}
+{:}
+
 --------------------------------------------------------------------------------
 
 (source_file
-  (curly
+  (curly_construction
     (colon_expression
       (identifier)
       (identifier))
     (colon_expression
       (identifier)
       (identifier)))
-  (curly
+  (curly_construction
     (identifier)
     (identifier)
     (identifier)
-    (identifier)))
+    (identifier))
+  (curly_construction)
+  (curly_construction))
+
+================================================================================
+Tuple construction
+================================================================================
+
+(20, 42)
+(0x2f, 0o755f)
+(20,)
+(x: 1, 2,)
+(a: "string")
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (tuple_construction
+    (integer_literal)
+    (integer_literal))
+  (tuple_construction
+    (integer_literal)
+    (float_literal))
+  (tuple_construction
+    (integer_literal))
+  (tuple_construction
+    (colon_expression
+      left: (identifier)
+      right: (integer_literal))
+    (integer_literal))
+  (tuple_construction
+    (colon_expression
+      left: (identifier)
+      right: (string_literal))))
+
+================================================================================
+Parenthesized expressions
+================================================================================
+
+(10)
+("string")
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (parenthesized
+    (integer_literal))
+  (parenthesized
+    (string_literal)))
+
+================================================================================
+Cast expressions
+================================================================================
+
+cast[int](x)
+cast(noSideEffect)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (cast
+    type: (identifier)
+    value: (identifier))
+  (cast
+    value: (identifier)))
+
+================================================================================
+Generalized strings
+================================================================================
+
+foo"very raw C:\Windows\System32"
+
+foobar""""extra spicy""""
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (generalized_string
+    (identifier)
+    (string_literal))
+  (generalized_string
+    (identifier)
+    (string_literal)))

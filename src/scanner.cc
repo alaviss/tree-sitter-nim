@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <locale>
 #include <ostream>
 #include <utility>
 #include <vector>
@@ -31,12 +32,11 @@ constexpr auto BitsInByte = 8;
 enum class TokenType : TSSymbol {
   TokenTypeStart,
   Comment = TokenTypeStart,
-  CommentDisable,
-  LongStringQuote,
+  StringContent,
+  LongStringContent,
   LayoutStart,
   LayoutEnd,
   InvalidLayout,
-  LayoutDisable,
   Line,
   LineElif,
   LineElse,
@@ -44,8 +44,6 @@ enum class TokenType : TSSymbol {
   LineFinally,
   LineOf,
   LineDo,
-  Colon,
-  Equal,
   BinaryOpStart,
   BinaryOp10Left = BinaryOpStart,
   BinaryOp10Right,
@@ -55,8 +53,10 @@ enum class TokenType : TSSymbol {
   BinaryOp6,
   BinaryOp5,
   BinaryOp2,
+  SigilOp,
   BinaryOp1,
   BinaryOp0,
+  UnaryOp,
   TokenTypeLen
 };
 
@@ -165,6 +165,12 @@ public:
     }
 
     mark_end();
+
+#ifdef TREE_SITTER_INTERNAL_BUILD
+    if (getenv("TREE_SITTER_DEBUG")) {
+      cerr << "lex_nim: valid symbols: " << valid_ << '\n';
+    }
+#endif
   };
 
   /// Returns whether the given token type is a valid token at this parsing
@@ -290,7 +296,58 @@ private:
 /// The maximum value of `char`. Useful for unicode testing.
 constexpr char MaxAsciiChar = 0x7f;
 
-namespace binary_op {
+bool is_lower(char32_t chr) { return chr >= 'a' && chr <= 'z'; }
+
+bool is_alpha(char32_t chr)
+{
+  return (chr >= 'A' && chr <= 'Z') || is_lower(chr);
+}
+
+bool is_digit(char32_t chr) { return chr >= '0' && chr <= '9'; }
+
+bool is_keyword_character(char32_t chr)
+{
+  return is_alpha(chr) || (chr == '_');
+}
+
+bool is_identifier_character(char32_t chr)
+{
+  return is_keyword_character(chr) || is_digit(chr) || (chr >= MaxAsciiChar);
+}
+
+char32_t to_lower(char32_t chr)
+{
+  constexpr char32_t ascii_lower_case_bit = 0x20;
+  return is_alpha(chr) ? chr | ascii_lower_case_bit : chr;
+}
+
+string get_keyword(Context& ctx, int limit = -1)
+{
+  string keyword;
+  int size = 0;
+  if (is_lower(ctx.lookahead())) {
+    keyword.push_back(static_cast<char>(ctx.lookahead()));
+    size++;
+    ctx.advance();
+    while (is_keyword_character(ctx.lookahead()) &&
+           (limit < 0 || size <= limit)) {
+      if (ctx.lookahead() != '_') {
+        keyword.push_back(static_cast<char>(to_lower(ctx.lookahead())));
+        size++;
+      }
+      ctx.advance();
+    }
+    // If there are non-keyword characters in the identifier, then this is not
+    // a keyword
+    if (is_identifier_character(ctx.lookahead())) {
+      keyword.clear();
+    }
+  }
+
+  return keyword;
+}
+
+namespace operators {
 
 /// The set of all BinaryOps tokens.
 constexpr ValidSymbols BinaryOps = make_valid_symbols(
@@ -298,6 +355,8 @@ constexpr ValidSymbols BinaryOps = make_valid_symbols(
      TokenType::BinaryOp9, TokenType::BinaryOp8, TokenType::BinaryOp7,
      TokenType::BinaryOp6, TokenType::BinaryOp5, TokenType::BinaryOp2,
      TokenType::BinaryOp1, TokenType::BinaryOp0});
+constexpr ValidSymbols UnaryOps =
+    make_valid_symbols({TokenType::UnaryOp, TokenType::SigilOp});
 
 // TODO: Invent something to encapsulate this structure.
 
@@ -317,7 +376,7 @@ constexpr array<char, 19> Chars{// OP10
                                 // OP5
                                 /* 12 */ '=', '<', '>', '!',
                                 // OP2
-                                /* 16 */ '@', ':', '?'};
+                                /* 16 */ ':', '?', '@'};
 
 /// Mapping of {@link Chars} starting index and offset from BinaryOpsStart.
 constexpr array<int8_t, 8> CharRanges{
@@ -407,46 +466,49 @@ bool is_op_char(char32_t character)
          UnicodeChars.end();
 }
 
-/// Lexer for binary operators.
-///
-/// @param ctx - The context to scan from.
-/// @param immediate - Whether the lexer was called before any spaces were
-/// scanned.
-bool lex(Context& ctx, bool immediate)
+TokenType scan_operator(Context& ctx, bool immediate)
 {
-  if (!ctx.all_valid(BinaryOps)) {
-    return false;
-  }
-
   enum class State {
     Arrow,
     Assignment,
     Colon,
+    ColonColon,
     Dot,
     Equal,
     MaybeArrow,
+    Minus,
     Regular,
   };
 
   auto state{State::Regular};
   const auto first_character = ctx.lookahead();
   auto result = classify(first_character);
+#ifdef TREE_SITTER_INTERNAL_BUILD
+  if (getenv("TREE_SITTER_DEBUG")) {
+    cerr << "lex_nim: operator first symbol classification: " << (int)result
+         << '\n';
+  }
+#endif
   if (result == TokenType::TokenTypeLen) {
-    return false;
+    return result;
   }
 
   switch (first_character) {
   case '.':
-    ctx.consume();
+    ctx.advance();
     state = State::Dot;
     break;
   case '=':
-    ctx.consume();
+    ctx.advance();
     state = State::Equal;
     break;
   case ':':
-    ctx.consume();
+    ctx.advance();
     state = State::Colon;
+    break;
+  case '-':
+    ctx.advance();
+    state = State::Minus;
     break;
   default:
     state = State::Regular;
@@ -458,10 +520,11 @@ bool lex(Context& ctx, bool immediate)
     case State::Assignment:
     case State::Equal:
     case State::MaybeArrow:
+    case State::Minus:
       switch (ctx.lookahead()) {
       case '>':
         state = State::Arrow;
-        ctx.consume();
+        ctx.advance();
         break;
       default:
         state = State::Regular;
@@ -469,6 +532,7 @@ bool lex(Context& ctx, bool immediate)
       break;
     case State::Arrow:
     case State::Colon:
+    case State::ColonColon:
     case State::Dot:
     case State::Regular:
       switch (ctx.lookahead()) {
@@ -479,11 +543,14 @@ bool lex(Context& ctx, bool immediate)
       case '=':
         state = State::Assignment;
         break;
+      case ':':
+        state = state == State::Colon ? State::ColonColon : State::Regular;
+        break;
       default:
         state = State::Regular;
         break;
       }
-      ctx.consume();
+      ctx.advance();
       break;
     }
   }
@@ -506,24 +573,21 @@ bool lex(Context& ctx, bool immediate)
     }
     break;
   case State::Equal:
-    if (ctx.valid(TokenType::Equal)) {
-      result = TokenType::Equal;
-    }
-    break;
   case State::Colon:
-    if (!ctx.valid(TokenType::Colon)) {
-      return false;
-    }
-    result = TokenType::Colon;
-    break;
+  case State::ColonColon:
   case State::Dot:
-    return false;
+    return TokenType::TokenTypeLen;
+  case State::Minus:
+    if (is_digit(ctx.lookahead())) {
+      return TokenType::TokenTypeLen;
+    }
+    break;
   default:
     break;
   }
 
   if (immediate) {
-    return ctx.finish(result);
+    return result;
   }
 
   switch (ctx.lookahead()) {
@@ -532,13 +596,51 @@ bool lex(Context& ctx, bool immediate)
   case '\r':
     break;
   default:
+    result = TokenType::UnaryOp;
+  }
+
+  return result;
+}
+
+/// Lexer for binary operators.
+///
+/// @param ctx - The context to scan from.
+/// @param immediate - Whether the lexer was called before any spaces were
+/// scanned.
+bool lex(Context& ctx, bool immediate)
+{
+  if (!ctx.all_valid(BinaryOps) && !ctx.any_valid(UnaryOps)) {
     return false;
   }
 
+  bool is_sigil = ctx.lookahead() == '@';
+  auto result = scan_operator(ctx, immediate);
+
+  if (result == TokenType::TokenTypeLen) {
+    return false;
+  }
+
+  if (!ctx.all_valid(BinaryOps) || result == TokenType::UnaryOp) {
+    result = is_sigil ? TokenType::SigilOp : TokenType::UnaryOp;
+  }
+
+#ifdef TREE_SITTER_INTERNAL_BUILD
+  if (getenv("TREE_SITTER_DEBUG")) {
+    cerr << "lex_nim: operator final classification: " << (int)result << '\n';
+    cerr << "lex_nim: binary valid: " << ctx.all_valid(BinaryOps) << '\n';
+    cerr << "lex_nim: unary valid: " << ctx.any_valid(UnaryOps) << '\n';
+  }
+#endif
+
+  if (!ctx.valid(result)) {
+    return false;
+  }
+
+  ctx.mark_end();
   return ctx.finish(result);
 }
 
-}  // namespace binary_op
+}  // namespace operators
 
 namespace comment {
 enum class Marker { Invalid, LineComment, BlockComment, BlockDocComment };
@@ -602,8 +704,7 @@ bool handle_line_comment(Context& ctx)
 
 bool lex(Context& ctx)
 {
-  if (!ctx.valid(TokenType::Comment) ||
-      (ctx.valid(TokenType::CommentDisable) && !ctx.error())) {
+  if (!ctx.valid(TokenType::Comment)) {
     return false;
   }
 
@@ -671,32 +772,6 @@ constexpr auto LineKeyword = make_valid_symbols(
     {TokenType::LineElif, TokenType::LineElse, TokenType::LineOf,
      TokenType::LineExcept, TokenType::LineFinally, TokenType::LineDo});
 
-string get_keyword(Context& ctx)
-{
-  string keyword;
-  if (ctx.lookahead() >= 'a' && ctx.lookahead() <= 'z') {
-    keyword.push_back(static_cast<char>(ctx.lookahead()));
-    ctx.advance();
-    while ((ctx.lookahead() >= 'a' && ctx.lookahead() <= 'z') ||
-           (ctx.lookahead() >= 'A' && ctx.lookahead() <= 'Z') ||
-           ctx.lookahead() == '_') {
-      if (ctx.lookahead() != '_') {
-        keyword.push_back(
-            static_cast<char>(tolower(static_cast<int>(ctx.lookahead()))));
-      }
-      ctx.advance();
-    }
-    // If there are non-keyword characters in the identifier, then this is not
-    // a keyword
-    if ((ctx.lookahead() >= '0' && ctx.lookahead() <= '9') ||
-        (ctx.lookahead() > MaxAsciiChar)) {
-      keyword.clear();
-    }
-  }
-
-  return keyword;
-}
-
 bool lex(Context& ctx)
 {
   if (!ctx.any_valid(LineTokens)) {
@@ -705,7 +780,8 @@ bool lex(Context& ctx)
   ctx.mark_end();
 
   if (ctx.any_valid(LineKeyword)) {
-    auto keyword = get_keyword(ctx);
+    constexpr auto longest_word_length = 7; /* finally */
+    auto keyword = get_keyword(ctx, longest_word_length);
 
 #ifdef TREE_SITTER_INTERNAL_BUILD
     if (getenv("TREE_SITTER_DEBUG")) {
@@ -741,9 +817,13 @@ bool lex(Context& ctx)
 }
 }  // namespace line
 
-bool lex_long_string_quote(Context& ctx)
+namespace string_lex {
+constexpr auto StringTokens = make_valid_symbols(
+    {TokenType::StringContent, TokenType::LongStringContent});
+
+bool handle_long_string_quote(Context& ctx)
 {
-  if (!ctx.valid(TokenType::LongStringQuote) || ctx.lookahead() != '"') {
+  if (ctx.lookahead() != '"' || !ctx.valid(TokenType::LongStringContent)) {
     return false;
   }
 
@@ -755,11 +835,46 @@ bool lex_long_string_quote(Context& ctx)
   }
 
   if (count < 3 || ctx.lookahead() == '"') {
-    return ctx.finish(TokenType::LongStringQuote);
+    return ctx.finish(TokenType::LongStringContent);
   }
 
   return false;
 }
+
+bool lex(Context& ctx)
+{
+  if (!ctx.any_valid(StringTokens) || ctx.error()) {
+    return false;
+  }
+
+  TRY_LEX(ctx, handle_long_string_quote);
+  bool has_content = false;
+  // NOLINTBEGIN(*-avoid-goto)
+  while (!ctx.eof()) {
+    switch (ctx.lookahead()) {
+    case '\n':
+    case '\r':
+    case '\\':
+      if (!ctx.valid(TokenType::LongStringContent)) {
+        goto loop_break;
+      }
+      break;
+    case '"':
+      goto loop_break;
+    }
+
+    has_content = true;
+    ctx.consume();
+  }
+  // NOLINTEND(*-avoid-goto)
+
+loop_break:
+  return has_content && ctx.finish(
+                            ctx.valid(TokenType::LongStringContent)
+                                ? TokenType::LongStringContent
+                                : TokenType::StringContent);
+}
+}  // namespace string_lex
 
 bool lex_indent(Context& ctx)
 {
@@ -775,10 +890,6 @@ bool lex_indent(Context& ctx)
       cerr << "lex_nim: invalid indentation reached\n";
     }
 #endif
-    return false;
-  }
-
-  if (ctx.valid(TokenType::LayoutDisable) && !ctx.error()) {
     return false;
   }
 
@@ -899,14 +1010,14 @@ bool tree_sitter_nim_external_scanner_scan(
   }
 #endif
 
-  TRY_LEX(ctx, lex_long_string_quote);
-  TRY_LEXN(ctx, binary_op::lex, true);
+  TRY_LEX(ctx, string_lex::lex);
+  TRY_LEXN(ctx, operators::lex, true);
 
   lex_space(ctx);
 
   TRY_LEX(ctx, comment::lex);
   TRY_LEX(ctx, lex_indent);
-  TRY_LEXN(ctx, binary_op::lex, false);
+  TRY_LEXN(ctx, operators::lex, false);
 
   return false;
 }
