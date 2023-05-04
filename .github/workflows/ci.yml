@@ -42,17 +42,8 @@ jobs:
       - run: npm install
       - name: Run test suite
         run: |
-          if [[ "$RUNNER_OS" != Windows ]]; then
-            cat <<"EOF" > c++-std14
-          #!/bin/sh
-          exec ${REAL_CXX:-c++} -std=c++14 "$@"
-          EOF
-
-            REAL_CXX=$CXX
-            CXX=$PWD/c++-std14
-            chmod 755 "$CXX"
-            export REAL_CXX
-            export CXX
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            export CXX=clang++
           fi
 
           npm test
