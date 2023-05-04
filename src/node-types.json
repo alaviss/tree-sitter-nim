@@ -99,6 +99,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -259,6 +263,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -427,6 +435,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -554,6 +566,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -747,6 +763,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -889,6 +909,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -1025,6 +1049,10 @@
           },
           {
             "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -1176,6 +1204,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -1339,6 +1371,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -1508,6 +1544,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -1639,6 +1679,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -1782,6 +1826,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -1909,6 +1957,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -2118,6 +2170,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -2312,6 +2368,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -2528,6 +2588,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -2678,6 +2742,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -2814,6 +2882,10 @@
           },
           {
             "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -2956,6 +3028,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -3114,6 +3190,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -3230,6 +3310,10 @@
           },
           {
             "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -3380,6 +3464,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -3571,6 +3659,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -3706,6 +3798,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -3833,6 +3929,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -4071,6 +4171,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -4214,6 +4318,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -4341,6 +4449,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -4560,6 +4672,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -4754,6 +4870,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -4914,6 +5034,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -4967,6 +5091,29 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "generalized_string",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "dot_expression",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "string_literal",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -5072,6 +5219,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -5222,6 +5373,10 @@
           },
           {
             "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -5386,6 +5541,10 @@
           },
           {
             "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -5562,6 +5721,10 @@
           },
           {
             "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -5789,6 +5952,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -5949,6 +6116,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -6086,6 +6257,10 @@
           },
           {
             "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -6294,6 +6469,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -6494,6 +6673,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -6670,6 +6853,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -6791,6 +6978,10 @@
           },
           {
             "type": "float_literal",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -6974,6 +7165,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -7101,6 +7296,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -7364,6 +7563,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -7599,6 +7802,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -7746,6 +7953,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -7997,6 +8208,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -8198,6 +8413,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -8358,6 +8577,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -8498,6 +8721,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -8627,6 +8854,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -8793,6 +9024,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -8921,6 +9156,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -9116,6 +9355,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -9383,6 +9626,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -9774,6 +10021,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -9953,6 +10204,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -10221,6 +10476,10 @@
           "named": true
         },
         {
+          "type": "generalized_string",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -10399,6 +10658,10 @@
         },
         {
           "type": "float_literal",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {
@@ -10646,6 +10909,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -10773,6 +11040,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -10953,6 +11224,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -11080,6 +11355,10 @@
           },
           {
             "type": "func_expression",
+            "named": true
+          },
+          {
+            "type": "generalized_string",
             "named": true
           },
           {
@@ -11263,6 +11542,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -11423,6 +11706,10 @@
             "named": true
           },
           {
+            "type": "generalized_string",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -11556,6 +11843,10 @@
         },
         {
           "type": "func_expression",
+          "named": true
+        },
+        {
+          "type": "generalized_string",
           "named": true
         },
         {

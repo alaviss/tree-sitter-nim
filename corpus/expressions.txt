@@ -203,9 +203,9 @@ a.b .. c.d
 
 $a.b
 
-#a.b"string"
+a.b"string"
 a.b "string"
-#a.b#[]#"string"
+a.b#[]#"string"
 
 --------------------------------------------------------------------------------
 
@@ -226,13 +226,22 @@ a.b "string"
     (dot_expression
       left: (identifier)
       right: (identifier)))
-  (comment)
+  (generalized_string
+    (dot_expression
+      left: (identifier)
+      right: (identifier))
+    (string_literal))
   (call
     function: (dot_expression
       left: (identifier)
       right: (identifier))
     (string_literal))
-  (comment))
+  (call
+    function: (dot_expression
+      left: (identifier)
+      right: (identifier))
+    (comment)
+    (string_literal)))
 
 ================================================================================
 Bracket expressions

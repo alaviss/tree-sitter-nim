@@ -30,7 +30,7 @@ const NumericLiteral = token(
 const Identifier = /[a-zA-Z\x80-\xff](_?[a-zA-Z0-9\x80-\xff])*/;
 const CharEscapeSequence = /[rcnlftv\\"'abe]|\d+|x[0-9a-fA-F]{2}/;
 const RawStringLiteral = token.immediate(
-  seq('"', optional(/[^\n\r"](""|[^\n\r"])*/), '"')
+  seq(optional(/[^\n\r"](""|[^\n\r"])*/), '"')
 );
 const Templates = {
   /**
@@ -87,7 +87,10 @@ module.exports = grammar({
 
   externals: $ => [
     $.comment,
+    $._immediate_string_start,
+    $._immediate_long_string_start,
     $._string_content,
+    $._raw_string_content,
     $._long_string_content,
     $._layout_start,
     $._layout_end,
@@ -501,8 +504,7 @@ module.exports = grammar({
         $.dot_expression,
         $.bracket_expression,
         $.curly_expression,
-        // XXX: https://github.com/tree-sitter/tree-sitter/issues/2236
-        // $.generalized_string,
+        $.generalized_string,
         $.pragma_expression,
         $.object_type,
         $.tuple_type,
@@ -853,8 +855,8 @@ module.exports = grammar({
       ),
     _generalized_string_literal: $ =>
       choice(
-        seq(token.immediate('"""'), $._long_string_body),
-        RawStringLiteral
+        seq($._immediate_long_string_start, $._long_string_body),
+        seq($._immediate_string_start, $._raw_string_body)
       ),
 
     /* Supporting expressions */
@@ -980,7 +982,10 @@ module.exports = grammar({
         )
       ),
 
-    _raw_string_literal: () => token(seq(/[rR]/, RawStringLiteral)),
+    _raw_string_literal: $ => seq(/[rR]"/, $._raw_string_body),
+
+    _raw_string_body: $ =>
+      seq(repeat($._raw_string_content), token.immediate('"')),
 
     _long_string_literal: $ => seq(/[rR]?"""/, $._long_string_body),
 

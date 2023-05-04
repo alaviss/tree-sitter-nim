@@ -32,7 +32,10 @@ constexpr auto BitsInByte = 8;
 enum class TokenType : TSSymbol {
   TokenTypeStart,
   Comment = TokenTypeStart,
+  ImmediateStringStart,
+  ImmediateLongStringStart,
   StringContent,
+  RawStringContent,
   LongStringContent,
   LayoutStart,
   LayoutEnd,
@@ -72,7 +75,7 @@ constexpr ValidSymbols make_valid_symbols(initializer_list<TokenType> syms)
   return result;
 }
 
-enum class Flag { CanTerminate, FlagLen };
+enum class Flag { CanTerminate, NoImmediates, FlagLen };
 
 struct State {
   vector<uint8_t> layout_stack;
@@ -730,6 +733,7 @@ bool lex(Context& ctx)
       }
 #endif
       if (nesting == 0) {
+        ctx.state().set_flag(Flag::NoImmediates);
         return ctx.finish(TokenType::Comment);
       }
       nesting--;
@@ -746,43 +750,89 @@ bool lex(Context& ctx)
 
 namespace string_lex {
 constexpr auto StringTokens = make_valid_symbols(
-    {TokenType::StringContent, TokenType::LongStringContent});
+    {TokenType::StringContent, TokenType::RawStringContent,
+     TokenType::LongStringContent});
+constexpr auto StringStartTokens = make_valid_symbols(
+    {TokenType::ImmediateStringStart, TokenType::ImmediateLongStringStart});
+constexpr auto RawStringType = make_valid_symbols(
+    {TokenType::LongStringContent, TokenType::RawStringContent});
 
-bool handle_long_string_quote(Context& ctx)
+bool handle_string_quote(Context& ctx)
 {
-  if (ctx.lookahead() != '"' || !ctx.valid(TokenType::LongStringContent)) {
+  if (ctx.lookahead() != '"' || !ctx.any_valid(RawStringType)) {
     return false;
   }
 
   ctx.consume();
-  uint8_t count = 1;
-  while (ctx.lookahead() == '"' && count < 3) {
-    ctx.advance();
-    count++;
+  if (ctx.valid(TokenType::RawStringContent)) {
+    if (ctx.lookahead() == '"') {
+      ctx.consume();
+      return ctx.finish(TokenType::RawStringContent);
+    }
+
+    return false;
   }
 
-  if (count < 3 || ctx.lookahead() == '"') {
-    return ctx.finish(TokenType::LongStringContent);
+  if (ctx.valid(TokenType::LongStringContent)) {
+    uint8_t count = 1;
+    while (ctx.lookahead() == '"' && count < 3) {
+      ctx.advance();
+      count++;
+    }
+
+    if (count < 3 || ctx.lookahead() == '"') {
+      return ctx.finish(TokenType::LongStringContent);
+    }
+    return false;
   }
 
   return false;
 }
 
+bool lex_string_start(Context& ctx)
+{
+  if (!ctx.any_valid(StringStartTokens) ||
+      ctx.state().test_flag(Flag::NoImmediates) || ctx.lookahead() != '"') {
+    return false;
+  }
+
+  ctx.consume();
+  if (ctx.valid(TokenType::ImmediateLongStringStart)) {
+    uint8_t count = 1;
+    while (ctx.lookahead() == '"' && count < 3) {
+      ctx.advance();
+      count++;
+    }
+    if (count == 3) {
+      ctx.mark_end();
+      return ctx.finish(TokenType::ImmediateLongStringStart);
+    }
+  }
+
+  return ctx.finish(TokenType::ImmediateStringStart);
+}
+
 bool lex(Context& ctx)
 {
+  TRY_LEX(ctx, lex_string_start);
+
   if (!ctx.any_valid(StringTokens) || ctx.error()) {
     return false;
   }
 
-  TRY_LEX(ctx, handle_long_string_quote);
+  TRY_LEX(ctx, handle_string_quote);
   bool has_content = false;
   // NOLINTBEGIN(*-avoid-goto)
   while (!ctx.eof()) {
     switch (ctx.lookahead()) {
     case '\n':
     case '\r':
-    case '\\':
       if (!ctx.valid(TokenType::LongStringContent)) {
+        goto loop_break;
+      }
+      [[fallthrough]];
+    case '\\':
+      if (!ctx.any_valid(RawStringType)) {
         goto loop_break;
       }
       break;
@@ -799,6 +849,8 @@ loop_break:
   return has_content && ctx.finish(
                             ctx.valid(TokenType::LongStringContent)
                                 ? TokenType::LongStringContent
+                            : ctx.valid(TokenType::RawStringContent)
+                                ? TokenType::RawStringContent
                                 : TokenType::StringContent);
 }
 }  // namespace string_lex
@@ -901,22 +953,25 @@ bool lex_indent(Context& ctx)
   return false;
 }
 
-bool scan_spaces(Context& ctx, bool force_update = false)
+size_t scan_spaces(Context& ctx, bool force_update = false)
 {
   bool update_indent = force_update;
   uint8_t indent = 0;
+  size_t spaces = 0;
   while (true) {
     // Need goto to break out of loop
     // NOLINTBEGIN(*-avoid-goto)
     switch (ctx.lookahead()) {
     case ' ':
       indent += (int)(indent != InvalidIndent);
+      spaces++;
       ctx.advance(true);
       break;
     case '\n':
     case '\r':
       update_indent = true;
       indent = 0;
+      spaces++;
       ctx.advance(true);
       break;
     case '\0':
@@ -936,7 +991,7 @@ loop_end:
     ctx.state().set_flag(Flag::CanTerminate);
   }
 
-  return update_indent;
+  return spaces;
 }
 
 bool lex_init(Context& ctx)
@@ -993,28 +1048,47 @@ bool tree_sitter_nim_external_scanner_scan(
   }
 #endif
 
+  constexpr auto immediate_tokens = make_valid_symbols(
+      {TokenType::ImmediateStringStart, TokenType::ImmediateLongStringStart,
+       TokenType::StringContent, TokenType::LongStringContent});
+
   TRY_LEX(ctx, lex_init);
 
   TRY_LEX(ctx, string_lex::lex);
   TRY_LEXN(ctx, operators::lex, true);
 
-  scan_spaces(ctx);
+  auto spaces = scan_spaces(ctx);
   ctx.mark_end();
 
   TRY_LEX(ctx, comment::lex);
   TRY_LEX(ctx, lex_indent);
   TRY_LEXN(ctx, operators::lex, false);
 
-  if (ctx.state().test_flag(Flag::CanTerminate) && !ctx.eof()) {
+  if (!ctx.eof() && !ctx.any_valid(immediate_tokens)) {
+    if (ctx.state().test_flag(Flag::CanTerminate)) {
 #ifdef TREE_SITTER_INTERNAL_BUILD
-    if (getenv("TREE_SITTER_DEBUG")) {
-      cerr << "lex_nim: can terminate set but unused, resetting\n";
-    }
+      if (getenv("TREE_SITTER_DEBUG")) {
+        cerr << "lex_nim: can terminate set but unused, resetting\n";
+      }
 #endif
-    ctx.state().reset_flag(Flag::CanTerminate);
-    return ctx.finish(TokenType::Spaces);
+      ctx.state().reset_flag(Flag::CanTerminate);
+      return ctx.finish(TokenType::Spaces);
+    }
+    if (ctx.state().test_flag(Flag::NoImmediates)) {
+#ifdef TREE_SITTER_INTERNAL_BUILD
+      if (getenv("TREE_SITTER_DEBUG")) {
+        cerr << "lex_nim: resetting no immediate flag\n";
+      }
+#endif
+      ctx.state().reset_flag(Flag::NoImmediates);
+      return ctx.finish(TokenType::Spaces);
+    }
   }
 
+  if (spaces > 0 && !ctx.state().test_flag(Flag::NoImmediates)) {
+    ctx.state().set_flag(Flag::NoImmediates);
+    return ctx.finish(TokenType::Spaces);
+  }
   return false;
 }
 }
