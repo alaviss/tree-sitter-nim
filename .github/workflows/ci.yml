@@ -11,21 +11,21 @@ jobs:
     name: Node test build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-        cache: 'npm'
-    - run: npm install
-    - run: npm run build
-    - name: Check for differences between commit and built file
-      run: |
-        if ! git diff --exit-code; then
-          echo '::error::There are differences between commit and code built. Make sure that `npm run build` is run before commiting. Check log for more details.'
-          git diff
-          exit 1
-        fi
-      shell: bash
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          cache: "npm"
+      - run: npm install
+      - run: npm run build
+      - name: Check for differences between commit and built file
+        run: |
+          if ! git diff --exit-code; then
+            echo '::error::There are differences between commit and code built. Make sure that `npm run build` is run before commiting. Check log for more details.'
+            git diff
+            exit 1
+          fi
+        shell: bash
 
   tests:
     strategy:
@@ -34,14 +34,28 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Run test suite on ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-        cache: 'npm'
-    - run: npm install
-    - name: Run test suite
-      run: npm test
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          cache: "npm"
+      - run: npm install
+      - name: Run test suite
+        run: |
+          if [["$RUNNER_OS" != Windows]]; then
+            cat <<"EOF" > c++-std14
+          #!/bin/sh
+          exec ${REAL_CXX:-c++} -std=c++14 "$@"
+          EOF
+
+            REAL_CXX=$CXX
+            CXX=$PWD/c++-std14
+            chmod 755 "$CXX"
+            export REAL_CXX
+            export CXX
+          fi
+
+          npm test
 
   rust:
     strategy:
@@ -50,24 +64,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Run rust test build on ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
-    - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Run test build
-      uses: actions-rs/cargo@v1
-      with:
-        command: build
+      - uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Run test build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
 
   success:
     needs: [uptodate, tests, rust]
     if: always()
     runs-on: ubuntu-latest
-    name: 'All checks passed'
+    name: "All checks passed"
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
-        name: 'Previous jobs failed'
+        name: "Previous jobs failed"
         run: |
           echo "::error::One of the previous jobs failed"
           exit 1

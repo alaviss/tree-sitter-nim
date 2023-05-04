@@ -11,6 +11,9 @@
         "src/parser.c",
         "src/scanner.cc"
       ],
+      "cflags_cc": [
+        "-std=c++14"
+      ],
       "cflags_c": [
         "-std=c99",
       ]
