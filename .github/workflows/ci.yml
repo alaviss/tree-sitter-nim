@@ -43,7 +43,9 @@ jobs:
       - name: Run test suite
         run: |
           if [[ "$RUNNER_OS" == macOS ]]; then
-            export CXX=clang++
+            # macOS default compiler defaults to C++03 for some reason.
+            # Force at least C++14 via an another compiler.
+            export CXX=$(brew --prefix llvm@15)/bin/clang++
           fi
 
           npm test
