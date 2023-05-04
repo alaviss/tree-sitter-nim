@@ -49,6 +49,7 @@ jobs:
           fi
 
           npm test
+        shell: bash
 
   rust:
     strategy:
