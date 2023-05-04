@@ -471,6 +471,10 @@ else: foo
 
 echo 1 - foo(), foo
 
+foo (x,)
+foo [x]
+foo {x}
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -559,7 +563,19 @@ echo 1 - foo(), foo
       left: (integer_literal)
       right: (call
         function: (identifier)))
-    (identifier)))
+    (identifier))
+  (call
+    function: (identifier)
+    (tuple_construction
+      (identifier)))
+  (call
+    function: (identifier)
+    (array_construction
+      (identifier)))
+  (call
+    function: (identifier)
+    (curly_construction
+      (identifier))))
 
 ================================================================================
 Block statements

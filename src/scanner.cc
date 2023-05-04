@@ -32,6 +32,9 @@ constexpr auto BitsInByte = 8;
 enum class TokenType : TSSymbol {
   TokenTypeStart,
   Comment = TokenTypeStart,
+  ImmediateParenOpen,
+  ImmediateBracketOpen,
+  ImmediateCurlyOpen,
   ImmediateStringStart,
   ImmediateLongStringStart,
   StringContent,
@@ -814,8 +817,6 @@ bool lex_string_start(Context& ctx)
 
 bool lex(Context& ctx)
 {
-  TRY_LEX(ctx, lex_string_start);
-
   if (!ctx.any_valid(StringTokens) || ctx.error()) {
     return false;
   }
@@ -854,6 +855,12 @@ loop_break:
                                 : TokenType::StringContent);
 }
 }  // namespace string_lex
+
+constexpr auto ImmediateTokens = make_valid_symbols(
+    {TokenType::ImmediateParenOpen, TokenType::ImmediateBracketOpen,
+     TokenType::ImmediateCurlyOpen, TokenType::ImmediateStringStart,
+     TokenType::ImmediateLongStringStart, TokenType::StringContent,
+     TokenType::LongStringContent});
 
 bool lex_keyword(Context& ctx)
 {
@@ -1008,6 +1015,30 @@ bool lex_init(Context& ctx)
   return ctx.finish(TokenType::Spaces);
 }
 
+bool lex_immediates(Context& ctx)
+{
+  if (!ctx.any_valid(ImmediateTokens) ||
+      ctx.state().test_flag(Flag::NoImmediates)) {
+    return false;
+  }
+
+  TRY_LEX(ctx, string_lex::lex_string_start);
+
+  if (ctx.lookahead() == '(' && ctx.valid(TokenType::ImmediateParenOpen)) {
+    ctx.consume();
+    return ctx.finish(TokenType::ImmediateParenOpen);
+  }
+  if (ctx.lookahead() == '[' && ctx.valid(TokenType::ImmediateBracketOpen)) {
+    ctx.consume();
+    return ctx.finish(TokenType::ImmediateBracketOpen);
+  }
+  if (ctx.lookahead() == '{' && ctx.valid(TokenType::ImmediateCurlyOpen)) {
+    ctx.consume();
+    return ctx.finish(TokenType::ImmediateCurlyOpen);
+  }
+  return false;
+}
+
 }  // namespace
 
 extern "C" {
@@ -1049,11 +1080,14 @@ bool tree_sitter_nim_external_scanner_scan(
 #endif
 
   constexpr auto immediate_tokens = make_valid_symbols(
-      {TokenType::ImmediateStringStart, TokenType::ImmediateLongStringStart,
-       TokenType::StringContent, TokenType::LongStringContent});
+      {TokenType::ImmediateParenOpen, TokenType::ImmediateBracketOpen,
+       TokenType::ImmediateCurlyOpen, TokenType::ImmediateStringStart,
+       TokenType::ImmediateLongStringStart, TokenType::StringContent,
+       TokenType::LongStringContent});
 
   TRY_LEX(ctx, lex_init);
 
+  TRY_LEX(ctx, lex_immediates);
   TRY_LEX(ctx, string_lex::lex);
   TRY_LEXN(ctx, operators::lex, true);
 

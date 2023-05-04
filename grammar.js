@@ -87,6 +87,9 @@ module.exports = grammar({
 
   externals: $ => [
     $.comment,
+    $._immediate_paren_open,
+    $._immediate_bracket_open,
+    $._immediate_curly_open,
     $._immediate_string_start,
     $._immediate_long_string_start,
     $._string_content,
@@ -639,7 +642,7 @@ module.exports = grammar({
         seq(
           field("function", $._basic_expression),
           seq(
-            token.immediate("("),
+            alias($._immediate_paren_open, "("),
             optional($._colon_equal_expression_list),
             ")"
           )
@@ -697,7 +700,13 @@ module.exports = grammar({
       prec.right(
         seq(
           keyword("tuple"),
-          optional(seq(token.immediate("["), $.field_declaration_list, "]"))
+          optional(
+            seq(
+              choice("[", alias($._immediate_bracket_open, "[")),
+              $.field_declaration_list,
+              "]"
+            )
+          )
         )
       ),
     _type_modifier: $ =>
@@ -814,7 +823,7 @@ module.exports = grammar({
         "suffix",
         seq(
           field("left", $._basic_expression),
-          token.immediate("["),
+          alias($._immediate_bracket_open, "["),
           field(
             "right",
             optional(alias($._colon_equal_expression_list, $.argument_list))
@@ -827,7 +836,7 @@ module.exports = grammar({
         "suffix",
         seq(
           field("left", $._basic_expression),
-          token.immediate("{"),
+          alias($._immediate_curly_open, "{"),
           field(
             "right",
             optional(alias($._colon_equal_expression_list, $.argument_list))
@@ -855,8 +864,8 @@ module.exports = grammar({
       ),
     _generalized_string_literal: $ =>
       choice(
-        seq($._immediate_long_string_start, $._long_string_body),
-        seq($._immediate_string_start, $._raw_string_body)
+        seq(alias($._immediate_long_string_start, '"""'), $._long_string_body),
+        seq(alias($._immediate_string_start, '"'), $._raw_string_body)
       ),
 
     /* Supporting expressions */
