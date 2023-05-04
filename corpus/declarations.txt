@@ -58,11 +58,12 @@ const Test* {.importc: "TEST".}: int
     (variable_declaration
       (symbol_declaration_list
         (tuple_deconstruct_declaration
-          (symbol_declaration
-            name: (identifier))
-          (symbol_declaration
-            name: (identifier))))
-      value: (tuple
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier))
+            (symbol_declaration
+              name: (identifier)))))
+      value: (tuple_construction
         (integer_literal)
         (integer_literal))))
   (const_section
@@ -74,13 +75,14 @@ const Test* {.importc: "TEST".}: int
     (variable_declaration
       (symbol_declaration_list
         (tuple_deconstruct_declaration
-          (symbol_declaration
-            name: (identifier))
-          (symbol_declaration
-            name: (identifier))
-          (symbol_declaration
-            name: (identifier))))
-      value: (tuple
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier))
+            (symbol_declaration
+              name: (identifier))
+            (symbol_declaration
+              name: (identifier)))))
+      value: (tuple_construction
         (integer_literal)
         (integer_literal)
         (integer_literal))))
@@ -88,12 +90,13 @@ const Test* {.importc: "TEST".}: int
     (variable_declaration
       (symbol_declaration_list
         (tuple_deconstruct_declaration
-          (symbol_declaration
-            name: (identifier))
-          (symbol_declaration
-            (exported_symbol
-              name: (identifier)))))
-      value: (tuple
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier))
+            (symbol_declaration
+              name: (exported_symbol
+                (identifier))))))
+      value: (tuple_construction
         (integer_literal)
         (integer_literal))))
   (const_section
@@ -102,8 +105,8 @@ const Test* {.importc: "TEST".}: int
         (symbol_declaration
           name: (identifier))
         (symbol_declaration
-          (exported_symbol
-            name: (identifier)))
+          name: (exported_symbol
+            (identifier)))
         (symbol_declaration
           name: (identifier)))
       value: (integer_literal)))
@@ -111,9 +114,9 @@ const Test* {.importc: "TEST".}: int
     (variable_declaration
       (symbol_declaration_list
         (symbol_declaration
-          (exported_symbol
-            name: (identifier))
-          pragma: (pragma_list
+          name: (exported_symbol
+            (identifier))
+          (pragma_list
             (colon_expression
               left: (identifier)
               right: (string_literal)))))
@@ -168,11 +171,12 @@ l_e_t
     (variable_declaration
       (symbol_declaration_list
         (tuple_deconstruct_declaration
-          (symbol_declaration
-            name: (identifier))
-          (symbol_declaration
-            name: (identifier))))
-      value: (tuple
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier))
+            (symbol_declaration
+              name: (identifier)))))
+      value: (tuple_construction
         (integer_literal)
         (integer_literal)))))
 
@@ -240,11 +244,12 @@ var (c, d) = (2, 3)
     (variable_declaration
       (symbol_declaration_list
         (tuple_deconstruct_declaration
-          (symbol_declaration
-            name: (identifier))
-          (symbol_declaration
-            name: (identifier))))
-      value: (tuple
+          (symbol_declaration_list
+            (symbol_declaration
+              name: (identifier))
+            (symbol_declaration
+              name: (identifier)))))
+      value: (tuple_construction
         (integer_literal)
         (integer_literal)))))
 
@@ -269,17 +274,20 @@ type
     (type_declaration
       (type_symbol_declaration
         name: (identifier))
-      (distinct_type
+      (modified_type
+        modifier: (distinct_modifier)
         (identifier)))
     (type_declaration
       (type_symbol_declaration
         name: (identifier)
         (generic_parameter_list
-          (parameter_declaration
-            (symbol_declaration_list
-              (symbol_declaration
-                name: (identifier))))))
-      (ref_type
+          (parameter_declaration_list
+            (parameter_declaration
+              (symbol_declaration_list
+                (symbol_declaration
+                  name: (identifier)))))))
+      (modified_type
+        modifier: (ref_modifier)
         (identifier)))))
 
 ================================================================================
@@ -331,10 +339,11 @@ type
       (type_symbol_declaration
         name: (identifier)
         (generic_parameter_list
-          (parameter_declaration
-            (symbol_declaration_list
-              (symbol_declaration
-                name: (identifier))))))
+          (parameter_declaration_list
+            (parameter_declaration
+              (symbol_declaration_list
+                (symbol_declaration
+                  name: (identifier)))))))
       (object_declaration
         (field_declaration_list
           (field_declaration
@@ -356,9 +365,10 @@ type
       (object_declaration
         (field_declaration_list
           (variant_declaration
-            (variant_descriminator_declaration
-              (symbol_declaration
-                name: (identifier))
+            (variant_discriminator_declaration
+              (symbol_declaration_list
+                (symbol_declaration
+                  name: (identifier)))
               type: (identifier))
             (of_branch
               values: (expression_list
@@ -374,7 +384,7 @@ type
                 (nil_literal)))
             (of_branch
               values: (expression_list
-                (binary_expression
+                (infix_expression
                   left: (identifier)
                   right: (identifier)))
               (field_declaration_list
@@ -385,7 +395,7 @@ type
                   type: (identifier))))
             (of_branch
               values: (expression_list
-                (binary_expression
+                (infix_expression
                   left: (identifier)
                   right: (identifier)))
               (field_declaration_list
@@ -396,7 +406,7 @@ type
                   type: (identifier))))
             (of_branch
               values: (expression_list
-                (binary_expression
+                (infix_expression
                   left: (identifier)
                   right: (identifier))
                 (identifier)
@@ -428,17 +438,18 @@ type
     (type_declaration
       (type_symbol_declaration
         name: (identifier))
-      (ref_type
+      (modified_type
+        modifier: (ref_modifier)
         (object_declaration
           (field_declaration_list
             (field_declaration
               (symbol_declaration_list
                 (symbol_declaration
-                  (exported_symbol
-                    name: (identifier)))
+                  name: (exported_symbol
+                    (identifier)))
                 (symbol_declaration
-                  (exported_symbol
-                    name: (identifier)))
+                  name: (exported_symbol
+                    (identifier)))
                 (symbol_declaration
                   name: (identifier)))
               type: (identifier))
@@ -453,31 +464,32 @@ type
               type: (identifier))))))
     (type_declaration
       (type_symbol_declaration
-        (exported_symbol
-          name: (identifier))
+        name: (exported_symbol
+          (identifier))
         pragma: (pragma_list
           (identifier)
           (colon_expression
             left: (identifier)
             right: (string_literal))))
-      (ref_type
+      (modified_type
+        modifier: (ref_modifier)
         (object_declaration
           inherits: (identifier)
           (field_declaration_list
             (field_declaration
               (symbol_declaration_list
                 (symbol_declaration
-                  (exported_symbol
-                    name: (identifier))
-                  pragma: (pragma_list
+                  name: (exported_symbol
+                    (identifier))
+                  (pragma_list
                     (identifier))))
               type: (identifier))
             (field_declaration
               (symbol_declaration_list
                 (symbol_declaration
-                  (exported_symbol
-                    name: (identifier))
-                  pragma: (pragma_list
+                  name: (exported_symbol
+                    (identifier))
+                  (pragma_list
                     (colon_expression
                       left: (identifier)
                       right: (string_literal)))))
@@ -493,7 +505,8 @@ type
     (type_declaration
       (type_symbol_declaration
         name: (identifier))
-      (ref_type
+      (modified_type
+        modifier: (ref_modifier)
         (object_declaration)))))
 
 ================================================================================
@@ -516,13 +529,14 @@ type
       (type_symbol_declaration
         name: (identifier))
       (tuple_type
-        (field_declaration
-          (symbol_declaration_list
-            (symbol_declaration
-              name: (identifier))
-            (symbol_declaration
-              name: (identifier)))
-          type: (identifier))))
+        (field_declaration_list
+          (field_declaration
+            (symbol_declaration_list
+              (symbol_declaration
+                name: (identifier))
+              (symbol_declaration
+                name: (identifier)))
+            type: (identifier)))))
     (type_declaration
       (type_symbol_declaration
         name: (identifier))
@@ -591,12 +605,11 @@ type
             function: (dot_expression
               left: (identifier)
               right: (identifier))
-            arguments: (argument_list
-              (identifier))))))
+            (identifier)))))
     (type_declaration
       (type_symbol_declaration
-        (exported_symbol
-          name: (identifier)))
+        name: (exported_symbol
+          (identifier)))
       (concept_declaration
         parameters: (parameter_list
           (identifier)
@@ -604,12 +617,12 @@ type
           (type_parameter
             (identifier)))
         body: (statement_list
-          (binary_expression
-            left: (binary_expression
+          (infix_expression
+            left: (infix_expression
               left: (identifier)
               right: (identifier))
             right: (identifier))
-          (binary_expression
+          (infix_expression
             left: (dot_expression
               left: (identifier)
               right: (identifier))
@@ -639,10 +652,10 @@ type
               (dot_expression
                 left: (identifier)
                 right: (identifier))))
-          (binary_expression
+          (infix_expression
             left: (identifier)
             right: (identifier))
-          (binary_expression
+          (infix_expression
             left: (identifier)
             right: (identifier))
           (var_section
@@ -665,29 +678,26 @@ type
         (comment)
         (comment)
         body: (statement_list
-          (binary_expression
+          (infix_expression
             left: (call
               function: (dot_expression
                 left: (identifier)
                 right: (identifier))
-              arguments: (argument_list
-                (identifier)))
+              (identifier))
             right: (identifier))
-          (binary_expression
+          (infix_expression
             left: (call
               function: (dot_expression
                 left: (identifier)
                 right: (identifier))
-              arguments: (argument_list
-                (identifier)))
+              (identifier))
             right: (identifier))
-          (binary_expression
+          (infix_expression
             left: (call
               function: (dot_expression
                 left: (identifier)
                 right: (identifier))
-              arguments: (argument_list
-                (identifier)))
+              (identifier))
             right: (bracket_expression
               left: (identifier)
               right: (argument_list
@@ -727,7 +737,7 @@ proc bar
       (discard_statement)))
   (proc_declaration
     name: (identifier)
-    pragma: (pragma_list
+    pragmas: (pragma_list
       (identifier)))
   (template_declaration
     name: (identifier)
@@ -735,10 +745,9 @@ proc bar
       (call
         function: (accent_quoted
           (identifier))
-        arguments: (argument_list
-          (identifier)
-          (integer_literal))))
-    parameters: (parameter_list
+        (identifier)
+        (integer_literal)))
+    parameters: (parameter_declaration_list
       (parameter_declaration
         (symbol_declaration_list
           (symbol_declaration
@@ -746,12 +755,12 @@ proc bar
         type: (identifier)))
     return_type: (identifier)
     body: (statement_list
-      (binary_expression
+      (infix_expression
         left: (identifier)
         right: (identifier))))
   (macro_declaration
     name: (identifier)
-    parameters: (parameter_list
+    parameters: (parameter_declaration_list
       (parameter_declaration
         (symbol_declaration_list
           (symbol_declaration
@@ -761,22 +770,21 @@ proc bar
       (discard_statement)))
   (method_declaration
     name: (identifier)
-    parameters: (parameter_list
+    parameters: (parameter_declaration_list
       (parameter_declaration
         (symbol_declaration_list
           (symbol_declaration
             name: (identifier)))
         type: (identifier)))
-    pragma: (pragma_list
+    pragmas: (pragma_list
       (identifier))
     body: (statement_list
       (call
         function: (identifier)
-        arguments: (argument_list
-          (string_literal)))))
+        (string_literal))))
   (iterator_declaration
     name: (identifier)
-    parameters: (parameter_list
+    parameters: (parameter_declaration_list
       (parameter_declaration
         (symbol_declaration_list
           (symbol_declaration
@@ -785,7 +793,7 @@ proc bar
           left: (identifier)
           right: (argument_list
             (identifier)))))
-    return_type: (tuple
+    return_type: (tuple_construction
       (identifier)
       (identifier))
     body: (statement_list
@@ -796,12 +804,12 @@ proc bar
         right: (identifier)
         body: (statement_list
           (yield_statement
-            (tuple
+            (tuple_construction
               (integer_literal)
               (identifier)))))))
   (converter_declaration
     name: (identifier)
-    parameters: (parameter_list
+    parameters: (parameter_declaration_list
       (parameter_declaration
         (symbol_declaration_list
           (symbol_declaration
@@ -811,8 +819,7 @@ proc bar
     body: (statement_list
       (call
         function: (identifier)
-        arguments: (argument_list
-          (identifier)))))
+        (identifier))))
   (proc_declaration
     name: (identifier)))
 

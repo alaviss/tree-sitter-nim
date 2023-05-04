@@ -49,10 +49,9 @@ echo x,
       (float_literal)))
   (call
     (identifier)
-    (argument_list
-      (identifier)
-      (comment)
-      (identifier)))
+    (identifier)
+    (comment)
+    (identifier))
   (comment)
   (comment)
   (comment))
@@ -74,9 +73,8 @@ comments can be #[nested
 (source_file
   (call
     (identifier)
-    (argument_list
-      (identifier)
-      (comment)
-      (identifier)))
+    (identifier)
+    (comment)
+    (identifier))
   (comment)
   (comment))

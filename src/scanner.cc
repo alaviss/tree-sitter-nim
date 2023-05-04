@@ -36,14 +36,9 @@ enum class TokenType : TSSymbol {
   LongStringContent,
   LayoutStart,
   LayoutEnd,
+  LayoutTerminator,
+  Spaces,
   InvalidLayout,
-  Line,
-  LineElif,
-  LineElse,
-  LineExcept,
-  LineFinally,
-  LineOf,
-  LineDo,
   BinaryOpStart,
   BinaryOp10Left = BinaryOpStart,
   BinaryOp10Right,
@@ -57,6 +52,12 @@ enum class TokenType : TSSymbol {
   BinaryOp1,
   BinaryOp0,
   UnaryOp,
+  Elif,
+  Else,
+  Except,
+  Finally,
+  Of,
+  Do,
   TokenTypeLen
 };
 
@@ -71,7 +72,7 @@ constexpr ValidSymbols make_valid_symbols(initializer_list<TokenType> syms)
   return result;
 }
 
-enum class Flag { NotLineStart, FlagLen };
+enum class Flag { CanTerminate, FlagLen };
 
 struct State {
   vector<uint8_t> layout_stack;
@@ -296,55 +297,35 @@ private:
 /// The maximum value of `char`. Useful for unicode testing.
 constexpr char MaxAsciiChar = 0x7f;
 
-bool is_lower(char32_t chr) { return chr >= 'a' && chr <= 'z'; }
-
-bool is_alpha(char32_t chr)
-{
-  return (chr >= 'A' && chr <= 'Z') || is_lower(chr);
-}
-
 bool is_digit(char32_t chr) { return chr >= '0' && chr <= '9'; }
 
-bool is_keyword_character(char32_t chr)
+bool is_lower(char32_t chr) { return chr >= 'a' && chr <= 'z'; }
+
+bool is_upper(char32_t chr) { return chr >= 'A' && chr <= 'Z'; }
+
+bool is_keyword(char32_t chr)
 {
-  return is_alpha(chr) || (chr == '_');
+  return is_lower(chr) || is_upper(chr) || chr == '_';
 }
 
-bool is_identifier_character(char32_t chr)
+string get_keyword(Context& ctx, int max_length)
 {
-  return is_keyword_character(chr) || is_digit(chr) || (chr >= MaxAsciiChar);
-}
+  string result{};
+  result.reserve(max_length);
 
-char32_t to_lower(char32_t chr)
-{
-  constexpr char32_t ascii_lower_case_bit = 0x20;
-  return is_alpha(chr) ? chr | ascii_lower_case_bit : chr;
-}
-
-string get_keyword(Context& ctx, int limit = -1)
-{
-  string keyword;
-  int size = 0;
   if (is_lower(ctx.lookahead())) {
-    keyword.push_back(static_cast<char>(ctx.lookahead()));
-    size++;
-    ctx.advance();
-    while (is_keyword_character(ctx.lookahead()) &&
-           (limit < 0 || size <= limit)) {
+    while (is_keyword(ctx.lookahead()) && result.size() < max_length) {
       if (ctx.lookahead() != '_') {
-        keyword.push_back(static_cast<char>(to_lower(ctx.lookahead())));
-        size++;
+        result.push_back((char)ctx.lookahead());
       }
       ctx.advance();
     }
-    // If there are non-keyword characters in the identifier, then this is not
-    // a keyword
-    if (is_identifier_character(ctx.lookahead())) {
-      keyword.clear();
+    if (is_keyword(ctx.lookahead())) {
+      result.clear();
     }
   }
 
-  return keyword;
+  return result;
 }
 
 namespace operators {
@@ -763,60 +744,6 @@ bool lex(Context& ctx)
 }
 }  // namespace comment
 
-namespace line {
-constexpr auto LineTokens = make_valid_symbols(
-    {TokenType::Line, TokenType::LineElif, TokenType::LineElse,
-     TokenType::LineOf, TokenType::LineExcept, TokenType::LineFinally,
-     TokenType::LineDo});
-constexpr auto LineKeyword = make_valid_symbols(
-    {TokenType::LineElif, TokenType::LineElse, TokenType::LineOf,
-     TokenType::LineExcept, TokenType::LineFinally, TokenType::LineDo});
-
-bool lex(Context& ctx)
-{
-  if (!ctx.any_valid(LineTokens)) {
-    return false;
-  }
-  ctx.mark_end();
-
-  if (ctx.any_valid(LineKeyword)) {
-    constexpr auto longest_word_length = 7; /* finally */
-    auto keyword = get_keyword(ctx, longest_word_length);
-
-#ifdef TREE_SITTER_INTERNAL_BUILD
-    if (getenv("TREE_SITTER_DEBUG")) {
-      cerr << "lex_nim: keyword after line: " << keyword << '\n';
-    }
-#endif
-
-    if (keyword == "elif" && ctx.valid(TokenType::LineElif)) {
-      return ctx.finish(TokenType::LineElif);
-    }
-    if (keyword == "else" && ctx.valid(TokenType::LineElse)) {
-      return ctx.finish(TokenType::LineElse);
-    }
-    if (keyword == "of" && ctx.valid(TokenType::LineOf)) {
-      return ctx.finish(TokenType::LineOf);
-    }
-    if (keyword == "except" && ctx.valid(TokenType::LineExcept)) {
-      return ctx.finish(TokenType::LineExcept);
-    }
-    if (keyword == "finally" && ctx.valid(TokenType::LineFinally)) {
-      return ctx.finish(TokenType::LineFinally);
-    }
-    if (keyword == "do" && ctx.valid(TokenType::LineDo)) {
-      return ctx.finish(TokenType::LineDo);
-    }
-  }
-
-  if (ctx.valid(TokenType::Line) && !ctx.eof()) {
-    return ctx.finish(TokenType::Line);
-  }
-
-  return false;
-}
-}  // namespace line
-
 namespace string_lex {
 constexpr auto StringTokens = make_valid_symbols(
     {TokenType::StringContent, TokenType::LongStringContent});
@@ -876,9 +803,48 @@ loop_break:
 }
 }  // namespace string_lex
 
+bool lex_keyword(Context& ctx)
+{
+  constexpr ValidSymbols keywords = make_valid_symbols(
+      {TokenType::Elif, TokenType::Else, TokenType::Except, TokenType::Finally,
+       TokenType::Of, TokenType::Do});
+
+  if (!ctx.any_valid(keywords)) {
+    return false;
+  }
+
+  const auto keyword = get_keyword(ctx, sizeof("finally"));
+  if (keyword == "elif" && ctx.valid(TokenType::Elif)) {
+    ctx.mark_end();
+    return ctx.finish(TokenType::Elif);
+  }
+  if (keyword == "else" && ctx.valid(TokenType::Else)) {
+    ctx.mark_end();
+    return ctx.finish(TokenType::Else);
+  }
+  if (keyword == "except" && ctx.valid(TokenType::Except)) {
+    ctx.mark_end();
+    return ctx.finish(TokenType::Except);
+  }
+  if (keyword == "finally" && ctx.valid(TokenType::Finally)) {
+    ctx.mark_end();
+    return ctx.finish(TokenType::Finally);
+  }
+  if (keyword == "of" && ctx.valid(TokenType::Of)) {
+    ctx.mark_end();
+    return ctx.finish(TokenType::Of);
+  }
+  if (keyword == "do" && ctx.valid(TokenType::Do)) {
+    ctx.mark_end();
+    return ctx.finish(TokenType::Do);
+  }
+
+  return false;
+}
+
 bool lex_indent(Context& ctx)
 {
-  if (ctx.lookahead() == '#') {
+  if (ctx.lookahead() == '#' || ctx.state().layout_stack.empty()) {
     return false;
   }
 
@@ -893,81 +859,98 @@ bool lex_indent(Context& ctx)
     return false;
   }
 
-  const int32_t last_indent =
-      !ctx.state().layout_stack.empty() ? ctx.state().layout_stack.back() : -1;
+  const int32_t current_layout = ctx.state().layout_stack.back();
 
-  if (ctx.valid(TokenType::LayoutStart) && last_indent < line_indent) {
-    // Don't open new root on error
-    if (ctx.state().layout_stack.empty() && ctx.error()) {
-      return false;
-    }
+  if (ctx.valid(TokenType::LayoutStart) && current_layout < line_indent) {
     ctx.state().layout_stack.push_back(line_indent);
     ctx.mark_end();
     return ctx.finish(TokenType::LayoutStart);
   }
 
-  if (ctx.valid(TokenType::LayoutEnd) && !ctx.state().layout_stack.empty()) {
-    if (last_indent > line_indent) {
+  if (ctx.state().test_flag(Flag::CanTerminate) &&
+      ctx.valid(TokenType::LayoutTerminator) && current_layout >= line_indent) {
+    ctx.mark_end();
+    if (current_layout == line_indent && lex_keyword(ctx)) {
+      return true;
+    }
+    ctx.state().reset_flag(Flag::CanTerminate);
+    return ctx.finish(TokenType::LayoutTerminator);
+  }
+
+  if (ctx.valid(TokenType::LayoutEnd) && ctx.state().layout_stack.size() > 1) {
+    if (current_layout > line_indent) {
+      ctx.state().set_flag(Flag::CanTerminate);
       ctx.state().layout_stack.pop_back();
       ctx.mark_end();
       return ctx.finish(TokenType::LayoutEnd);
     }
 
     if (ctx.eof()) {
+      ctx.state().set_flag(Flag::CanTerminate);
       ctx.state().layout_stack.pop_back();
       ctx.mark_end();
       return ctx.finish(TokenType::LayoutEnd);
     }
   }
 
-  if (last_indent > line_indent) {
-    ctx.mark_end();
-    return ctx.finish(TokenType::InvalidLayout);
-  }
-
-  if (!ctx.state().test_flag(Flag::NotLineStart)) {
-    ctx.state().set_flag(Flag::NotLineStart);
-    TRY_LEX(ctx, line::lex);
-  }
+  /* if (current_layout < line_indent) { */
+  /*   ctx.mark_end(); */
+  /*   return ctx.finish(TokenType::InvalidLayout); */
+  /* } */
 
   return false;
 }
 
-void lex_space(Context& ctx)
+bool scan_spaces(Context& ctx, bool force_update = false)
 {
-  bool found = false;
+  bool update_indent = force_update;
   uint8_t indent = 0;
   while (true) {
+    // Need goto to break out of loop
+    // NOLINTBEGIN(*-avoid-goto)
     switch (ctx.lookahead()) {
     case ' ':
-      if (found || ctx.state().layout_stack.empty()) {
-        indent += (int)(indent != InvalidIndent);
-      }
-      ctx.advance(false);
-      break;
-    case '\0':
-      if (ctx.eof()) {
-        found = true;
-        indent = 0;
-        ctx.mark_end();
-      }
-      goto end;  // NOLINT(*-avoid-goto)
+      indent += (int)(indent != InvalidIndent);
+      ctx.advance(true);
       break;
     case '\n':
     case '\r':
-      found = true;
+      update_indent = true;
       indent = 0;
-      ctx.consume();
+      ctx.advance(true);
       break;
+    case '\0':
+      if (ctx.eof()) {
+        update_indent = true;
+        indent = 0;
+      }
+      goto loop_end;
     default:
-      goto end;  // NOLINT(*-avoid-goto)
+      goto loop_end;
     }
+    // NOLINTEND(*-avoid-goto)
   }
-end:
-  if (found) {
+loop_end:
+  if (update_indent) {
     ctx.state().line_indent = indent;
-    ctx.state().reset_flag(Flag::NotLineStart);
+    ctx.state().set_flag(Flag::CanTerminate);
   }
+
+  return update_indent;
+}
+
+bool lex_init(Context& ctx)
+{
+  if (!ctx.state().layout_stack.empty()) {
+    return false;
+  }
+
+  scan_spaces(ctx, true);
+  TRY_LEX(ctx, comment::lex);
+
+  ctx.mark_end();
+  ctx.state().layout_stack.push_back(ctx.state().line_indent);
+  return ctx.finish(TokenType::Spaces);
 }
 
 }  // namespace
@@ -1010,14 +993,27 @@ bool tree_sitter_nim_external_scanner_scan(
   }
 #endif
 
+  TRY_LEX(ctx, lex_init);
+
   TRY_LEX(ctx, string_lex::lex);
   TRY_LEXN(ctx, operators::lex, true);
 
-  lex_space(ctx);
+  scan_spaces(ctx);
+  ctx.mark_end();
 
   TRY_LEX(ctx, comment::lex);
   TRY_LEX(ctx, lex_indent);
   TRY_LEXN(ctx, operators::lex, false);
+
+  if (ctx.state().test_flag(Flag::CanTerminate) && !ctx.eof()) {
+#ifdef TREE_SITTER_INTERNAL_BUILD
+    if (getenv("TREE_SITTER_DEBUG")) {
+      cerr << "lex_nim: can terminate set but unused, resetting\n";
+    }
+#endif
+    ctx.state().reset_flag(Flag::CanTerminate);
+    return ctx.finish(TokenType::Spaces);
+  }
 
   return false;
 }

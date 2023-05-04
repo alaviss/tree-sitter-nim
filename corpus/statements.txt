@@ -33,17 +33,17 @@ for _, v {.tag.} in c.pairs:
         name: (identifier)))
     right: (call
       function: (identifier)
-      arguments: (argument_list
-        (identifier)))
+      (identifier))
     body: (statement_list
       (integer_literal)))
   (for
     left: (symbol_declaration_list
       (tuple_deconstruct_declaration
-        (symbol_declaration
-          name: (identifier))
-        (symbol_declaration
-          name: (identifier)))
+        (symbol_declaration_list
+          (symbol_declaration
+            name: (identifier))
+          (symbol_declaration
+            name: (identifier))))
       (symbol_declaration
         name: (identifier))
       (symbol_declaration
@@ -62,10 +62,10 @@ for _, v {.tag.} in c.pairs:
   (for
     left: (symbol_declaration_list
       (symbol_declaration
-        name: (blank_identifier))
+        name: (identifier))
       (symbol_declaration
         name: (identifier)
-        pragma: (pragma_list
+        (pragma_list
           (identifier))))
     right: (dot_expression
       left: (identifier)
@@ -107,15 +107,19 @@ import K except F
 
 (source_file
   (import_statement
-    (identifier))
+    (expression_list
+      (identifier)))
   (import_statement
-    (identifier)
-    (identifier)
-    (identifier))
+    (expression_list
+      (identifier)
+      (identifier)
+      (identifier)))
   (import_statement
-    (identifier)
-    (import_exception_list
-      (identifier))))
+    (expression_list
+      (identifier))
+    (except_clause
+      (expression_list
+        (identifier)))))
 
 ================================================================================
 Export statements
@@ -131,14 +135,18 @@ export bar except bar
 
 (source_file
   (export_statement
-    (identifier)
-    (identifier))
+    (expression_list
+      (identifier)
+      (identifier)))
   (export_statement
-    (identifier))
+    (expression_list
+      (identifier)))
   (export_statement
-    (identifier)
-    (export_exception_list
-      (identifier))))
+    (expression_list
+      (identifier))
+    (except_clause
+      (expression_list
+        (identifier)))))
 
 ================================================================================
 Import from statements
@@ -153,12 +161,12 @@ from X import Y
 (source_file
   (import_from_statement
     module: (identifier)
-    (import_symbol_list
+    (expression_list
       (identifier)
       (identifier)))
   (import_from_statement
     module: (identifier)
-    (import_symbol_list
+    (expression_list
       (identifier))))
 
 ================================================================================
@@ -173,10 +181,12 @@ include X
 
 (source_file
   (include_statement
-    (identifier)
-    (string_literal))
+    (expression_list
+      (identifier)
+      (string_literal)))
   (include_statement
-    (identifier)))
+    (expression_list
+      (identifier))))
 
 ================================================================================
 Discard statements
@@ -203,9 +213,8 @@ discard foo as bar
   (discard_statement
     (call
       function: (identifier)
-      arguments: (argument_list
-        (statement_list
-          (identifier)))))
+      (statement_list
+        (identifier))))
   (discard_statement
     (infix_expression
       left: (identifier)
@@ -304,15 +313,18 @@ bind foo.bar
 
 (source_file
   (bind_statement
-    (identifier)
-    (identifier)
-    (identifier))
-  (bind_statement
-    (identifier))
-  (bind_statement
-    (qualified_symbol
+    (expression_list
       (identifier)
-      (identifier))))
+      (identifier)
+      (identifier)))
+  (bind_statement
+    (expression_list
+      (identifier)))
+  (bind_statement
+    (expression_list
+      (dot_expression
+        (identifier)
+        (identifier)))))
 
 ================================================================================
 Mixin statements
@@ -328,15 +340,18 @@ mixin system.true
 
 (source_file
   (mixin_statement
-    (identifier)
-    (identifier)
-    (identifier))
-  (mixin_statement
-    (identifier))
-  (mixin_statement
-    (qualified_symbol
+    (expression_list
       (identifier)
-      (identifier))))
+      (identifier)
+      (identifier)))
+  (mixin_statement
+    (expression_list
+      (identifier)))
+  (mixin_statement
+    (expression_list
+      (dot_expression
+        (identifier)
+        (identifier)))))
 
 ================================================================================
 Yield statements
@@ -371,8 +386,7 @@ static:
     body: (statement_list
       (call
         function: (identifier)
-        arguments: (argument_list
-          (identifier)))))
+        (identifier))))
   (static_statement
     body: (statement_list
       (call
@@ -381,6 +395,5 @@ static:
         function: (identifier))
       (call
         function: (identifier)
-        arguments: (argument_list
-          (identifier)
-          (string_literal))))))
+        (identifier)
+        (string_literal)))))
