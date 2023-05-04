@@ -449,12 +449,10 @@ foo:
   foo bar, foo: bar bar
   of x, y: other
 
-#[
 foo "xyz"
 
 foo """
 xyz"""
-]#
 
 foo x, y, z:
   x
@@ -522,8 +520,13 @@ foo {x}
             (identifier)
             (identifier))
           (statement_list
-            (identifier))))
-      (comment)))
+            (identifier))))))
+  (call
+    function: (identifier)
+    (string_literal))
+  (call
+    function: (identifier)
+    (string_literal))
   (call
     function: (identifier)
     (identifier)
