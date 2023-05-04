@@ -1,4 +1,4 @@
-/* Copyright 2023 Leorize <leorize+oss@disroot.org>
+﻿/* Copyright 2023 Leorize <leorize+oss@disroot.org>
  *
  * SPDX-License-Identifier: MPL-2.0
  */
@@ -73,7 +73,7 @@ constexpr ValidSymbols make_valid_symbols(initializer_list<TokenType> syms)
 {
   uint64_t result{};
   for (const auto sym : syms) {
-    result |= 1U << uint8_t(sym);
+    result |= 1UL << uint8_t(sym);
   }
   return result;
 }
