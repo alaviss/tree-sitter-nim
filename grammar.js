@@ -121,23 +121,7 @@ module.exports = grammar({
     keyword_regex("do"),
   ],
 
-  conflicts: $ => [
-    // placeholder
-    [$._command_expression, $._simple_expression_command_start],
-    [$._command_statement, $._simple_expression_command_start],
-    [$._command_expression, $._simple_expression],
-    [$._command_expression, $._type_expression],
-    [
-      $._command_expression,
-      $._command_statement,
-      $._simple_expression_command_start,
-    ],
-    [
-      $._command_expression,
-      $._type_expression,
-      $._simple_expression_command_start,
-    ],
-  ],
+  conflicts: $ => [[$._command_function, $._simple_expression_command_start]],
   extras: $ => [/[\n\r ]+/, $.comment],
   precedences: $ => [
     [
@@ -165,6 +149,7 @@ module.exports = grammar({
     [$._routine_expression_tail, "proc_type"],
     ["post_expr", $._basic_expression],
     ["post_expr", $._simple_expression_command_start],
+    ["post_expr", $._simple_expression],
     ["post_expr", $._expression_statement],
     // [$.equal_expression, $._expression_statement],
     [$._post_expression_block, $._call_do],
@@ -172,6 +157,9 @@ module.exports = grammar({
     [$.enum_declaration, $.enum_type],
     [$.object_declaration, $.object_type],
     [$._type_definition, $.modified_type],
+    [$._prefix_expression, $._simple_expression_command_start],
+    [$._sigil_expression, $._command_function],
+    [$._simple_expression, $._command_expression],
   ],
   // supertypes: $ => [$._statement, $._expression],
   word: $ => $.identifier,
@@ -245,7 +233,7 @@ module.exports = grammar({
     import_from_statement: $ =>
       seq(
         keyword("from"),
-        field("module", $._simple_expression),
+        field("module", $._expression),
         keyword("import"),
         $.expression_list
       ),
@@ -487,13 +475,17 @@ module.exports = grammar({
         $.try,
         $.for
       ),
-    _simple_expression: $ => choice($._simple_expression_command_start),
+    _simple_expression: $ =>
+      choice(
+        $._simple_expression_command_start,
+        alias($._prefix_expression, $.prefix_expression)
+      ),
     _simple_expression_command_start: $ =>
       choice(
         $._basic_expression,
         alias($._command_expression, $.call),
         alias($._infix_expression, $.infix_expression),
-        alias($._prefix_expression, $.prefix_expression)
+        alias($._prefix_expression_command_start, $.prefix_expression)
       ),
     _basic_expression: $ =>
       choice(
@@ -601,7 +593,7 @@ module.exports = grammar({
             $._call_expression,
             $._command_expression,
             $._command_statement,
-            field("function", $._basic_expression)
+            field("function", $._command_function)
           ),
           $._post_expression_block
         )
@@ -609,7 +601,7 @@ module.exports = grammar({
     _command_statement: $ =>
       prec.dynamic(
         -2,
-        seq(field("function", $._basic_expression), $._equal_expression_list)
+        seq(field("function", $._command_function), $._equal_expression_list)
       ),
     _call_block: $ =>
       prec.right(
@@ -618,7 +610,7 @@ module.exports = grammar({
           choice(
             $._call_expression,
             $._command_expression,
-            field("function", $._basic_expression)
+            field("function", $._command_function)
           ),
           $._post_expression_block
         )
@@ -630,7 +622,7 @@ module.exports = grammar({
           choice(
             $._call_expression,
             $._command_expression,
-            field("function", $._basic_expression)
+            field("function", $._command_function)
           ),
           $.do_block,
           optional($._post_expression_block_tail)
@@ -652,10 +644,11 @@ module.exports = grammar({
       prec.dynamic(
         -1,
         seq(
-          field("function", $._basic_expression),
+          field("function", $._command_function),
           choice($._simple_expression_command_start)
         )
       ),
+    _command_function: $ => $._basic_expression,
     _post_expression_block: $ =>
       prec.right(
         seq(
@@ -684,11 +677,7 @@ module.exports = grammar({
       seq($._routine_type_tail, "=", field("body", $.statement_list)),
 
     /* Type expressions */
-    _type_expression: $ =>
-      prec.dynamic(
-        -2,
-        choice($._basic_expression, alias($._command_expression, $.call))
-      ),
+    _type_expression: $ => prec.dynamic(-2, choice($._simple_expression)),
     object_type: () => keyword("object"),
     enum_type: () => keyword("enum"),
     modified_type: $ =>
@@ -773,15 +762,28 @@ module.exports = grammar({
     _prefix_extended: $ =>
       prec("post_expr", seq($._prefix_expression, $._post_expression_block)),
     _prefix_expression: $ =>
+      choice($._prefix_expression_command_start, $._prefix_expression_word),
+    _prefix_expression_word: $ =>
+      prec.left(
+        "unary",
+        seq(
+          field(
+            "operator",
+            choice(
+              ...Object.values(WordOperators)
+                .flat()
+                .filter(x => x !== "not")
+                .map(keyword)
+            )
+          ),
+          $._simple_expression
+        )
+      ),
+    _prefix_expression_command_start: $ =>
       choice(
         .../** @type {[Rule, string][]} */ ([
           [$._unaryop, "unary"],
-          [
-            choice(
-              ...Object.values(WordOperators).flatMap(x => x.map(keyword))
-            ),
-            "unary",
-          ],
+          [keyword("not"), "unary"],
           [$._sigilop, "sigil"],
         ]).map(([operator, precedence]) =>
           prec.left(
@@ -888,16 +890,17 @@ module.exports = grammar({
       ),
     colon_expression: $ =>
       seq(
-        field("left", $._simple_expression),
+        field("left", $._left_hand_side),
         ":",
         field("right", $._expression_with_call_do)
       ),
     equal_expression: $ =>
       seq(
-        field("left", $._simple_expression),
+        field("left", $._left_hand_side),
         "=",
         field("right", $._expression_with_call_block)
       ),
+    _left_hand_side: $ => $._simple_expression,
 
     /* Symbol/identifier declaration */
     parameter_declaration_list: $ =>

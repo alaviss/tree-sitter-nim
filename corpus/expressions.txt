@@ -112,7 +112,7 @@ a += c >= b
 
 c of RootObj
 
-# 1 - x 1 - x
+1 - x 1 - x
 
 1 + 1: 3
 else: 4
@@ -183,7 +183,13 @@ else: 4
   (infix_expression
     left: (identifier)
     right: (identifier))
-  (comment)
+  (infix_expression
+    left: (integer_literal)
+    right: (call
+      function: (identifier)
+      (infix_expression
+        left: (integer_literal)
+        right: (identifier))))
   (infix_expression
     left: (integer_literal)
     right: (integer_literal)
