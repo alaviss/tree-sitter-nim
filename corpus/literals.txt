@@ -226,9 +226,12 @@ Character literals
 '\x00'
 '\32'
 
+'\A'
+
 --------------------------------------------------------------------------------
 
 (source_file
+  (char_literal)
   (char_literal)
   (char_literal)
   (char_literal)

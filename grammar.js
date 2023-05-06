@@ -28,7 +28,7 @@ const NumericLiteral = token(
   )
 );
 const Identifier = /[a-zA-Z\x80-\xff](_?[a-zA-Z0-9\x80-\xff])*/;
-const CharEscapeSequence = /[rcnlftv\\"'abe]|\d+|x[0-9a-fA-F]{2}/;
+const CharEscapeSequence = /[rRcCnNlLfFtTvV\\"'aAbBeE]|\d+|x[0-9a-fA-F]{2}/;
 const RawStringLiteral = token.immediate(
   seq(optional(/[^\n\r"](""|[^\n\r"])*/), '"')
 );
@@ -232,7 +232,9 @@ module.exports = grammar({
     mixin_statement: $ => seq(keyword("mixin"), $.expression_list),
     import_from_statement: $ =>
       seq(
-        keyword("from"),
+        // Don't ask me why, but lowering the precedence makes it
+        // matches correctly.
+        keyword("from", 0),
         field("module", $._expression),
         keyword("import"),
         $.expression_list
@@ -322,16 +324,7 @@ module.exports = grammar({
     enum_declaration: $ =>
       seq(
         keyword("enum"),
-        choice(
-          repeat1(seq($.enum_field_declaration, optional(","))),
-          seq(
-            $._layout_start,
-            repeat1(
-              seq($.enum_field_declaration, optional(","), $._layout_terminator)
-            ),
-            $._layout_end
-          )
-        )
+        section($, repeat1(seq($.enum_field_declaration, optional(","))))
       ),
     enum_field_declaration: $ =>
       seq(
@@ -362,6 +355,8 @@ module.exports = grammar({
         )
       ),
 
+    _object_field_declaration_branch_list: $ =>
+      choice($._object_field_declaration, $._object_field_declaration_list),
     _object_field_declaration_list: $ =>
       seq(
         $._layout_start,
@@ -378,17 +373,19 @@ module.exports = grammar({
       ),
 
     conditional_declaration: $ =>
-      seq(
-        keyword("when"),
-        field("condition", $._expression),
-        ":",
-        field("consequence", $._object_field_declaration_list),
-        repeat(
-          field(
-            "alternative",
-            seq(
-              alias($._elif_declaration_branch, $.elif_branch),
-              alias($._else_declaration_branch, $.else_branch)
+      prec.right(
+        seq(
+          keyword("when"),
+          field("condition", $._expression),
+          ":",
+          field("consequence", $._object_field_declaration_list),
+          repeat(
+            field(
+              "alternative",
+              seq(
+                alias($._elif_declaration_branch, $.elif_branch),
+                alias($._else_declaration_branch, $.else_branch)
+              )
             )
           )
         )
@@ -400,20 +397,29 @@ module.exports = grammar({
         ":",
         field(
           "consequence",
-          alias($._object_field_declaration_list, $.field_declaration_list)
+          alias(
+            $._object_field_declaration_branch_list,
+            $.field_declaration_list
+          )
         )
       ),
     variant_declaration: $ =>
-      seq(
-        keyword("case"),
-        $.variant_discriminator_declaration,
-        optional(":"),
-        $._layout_terminator,
-        repeat1(
+      prec.right(
+        seq(
+          keyword("case"),
+          $.variant_discriminator_declaration,
+          optional(":"),
           choice(
-            alias($._of_declaration_branch, $.of_branch),
-            alias($._else_declaration_branch, $.else_branch)
+            seq($._layout_terminator, $._variant_declaration_body),
+            seq($._layout_start, $._variant_declaration_body, $._layout_end)
           )
+        )
+      ),
+    _variant_declaration_body: $ =>
+      repeat1(
+        choice(
+          alias($._of_declaration_branch, $.of_branch),
+          alias($._else_declaration_branch, $.else_branch)
         )
       ),
     variant_discriminator_declaration: $ => $._identifier_declaration,
@@ -422,13 +428,13 @@ module.exports = grammar({
         keyword_regex("of"),
         field("values", $.expression_list),
         ":",
-        alias($._object_field_declaration_list, $.field_declaration_list)
+        alias($._object_field_declaration_branch_list, $.field_declaration_list)
       ),
     _else_declaration_branch: $ =>
       seq(
         keyword_regex("else"),
         ":",
-        alias($._object_field_declaration_list, $.field_declaration_list)
+        alias($._object_field_declaration_branch_list, $.field_declaration_list)
       ),
 
     concept_declaration: $ =>
@@ -543,7 +549,10 @@ module.exports = grammar({
         keyword("case"),
         field("value", $._expression),
         optional(":"),
-        $._case_body
+        choice(
+          seq($._layout_terminator, $._case_body),
+          seq($._layout_start, $._case_body, $._layout_end)
+        )
       ),
     _case_body: $ =>
       prec.right(repeat1(choice($.of_branch, $.elif_branch, $.else_branch))),
@@ -732,18 +741,32 @@ module.exports = grammar({
           [$._binop10r, "binary_10", prec.right],
           [$._binop10l, "binary_10", prec.left],
           [$._binop9, "binary_9", prec.left],
-          [choice(...WordOperators[9].map(keyword)), "binary_9", prec.left],
+          [
+            choice(...WordOperators[9].map(x => keyword(x))),
+            "binary_9",
+            prec.left,
+          ],
           [$._binop8, "binary_8", prec.left],
           [$._binop7, "binary_7", prec.left],
           [$._binop6, "binary_6", prec.left],
           [$._binop5, "binary_5", prec.left],
           [
-            choice(...WordOperators[5].filter(x => x != "not").map(keyword)),
+            choice(
+              ...WordOperators[5].filter(x => x != "not").map(x => keyword(x))
+            ),
             "binary_5",
             prec.left,
           ],
-          [choice(...WordOperators[4].map(keyword)), "binary_4", prec.left],
-          [choice(...WordOperators[3].map(keyword)), "binary_3", prec.left],
+          [
+            choice(...WordOperators[4].map(x => keyword(x))),
+            "binary_4",
+            prec.left,
+          ],
+          [
+            choice(...WordOperators[3].map(x => keyword(x))),
+            "binary_3",
+            prec.left,
+          ],
           [$._binop2, "binary_2", prec.left],
           [$._binop1, "binary_1", prec.left],
           [$._binop0, "binary_0", prec.left],
@@ -773,7 +796,7 @@ module.exports = grammar({
               ...Object.values(WordOperators)
                 .flat()
                 .filter(x => x !== "not")
-                .map(keyword)
+                .map(x => keyword(x))
             )
           ),
           $._simple_expression
@@ -904,15 +927,42 @@ module.exports = grammar({
 
     /* Symbol/identifier declaration */
     parameter_declaration_list: $ =>
-      sep1(
-        alias($._identifier_declaration, $.parameter_declaration),
-        choice(",", ";")
+      seq(
+        sep1(
+          alias($._identifier_declaration, $.parameter_declaration),
+          choice(",", ";")
+        ),
+        optional(choice(",", ";"))
       ),
     field_declaration_list: $ =>
-      sep1(
-        alias($._identifier_declaration, $.field_declaration),
-        choice(",", ";")
+      seq(
+        sep1(
+          alias($._identifier_declaration, $.field_declaration),
+          choice(",", ";")
+        ),
+        optional(choice(",", ";"))
       ),
+    _identifier_declaration: $ =>
+      prec.right(
+        seq(
+          $.symbol_declaration_list,
+          field("type", optional(seq(":", $._type_expression))),
+          field("value", optional(seq("=", $._expression_with_call_block)))
+        )
+      ),
+    symbol_declaration_list: $ =>
+      prec.right(
+        sep1(choice($.symbol_declaration, $.tuple_deconstruct_declaration), ",")
+      ),
+    tuple_deconstruct_declaration: $ =>
+      seq("(", $.symbol_declaration_list, ")"),
+    symbol_declaration: $ =>
+      seq(
+        field("name", choice($._symbol, $.exported_symbol)),
+        optional($.pragma_list)
+      ),
+    exported_symbol: $ => seq($._symbol, "*"),
+
     _identifier_declaration: $ =>
       prec.right(
         seq(
@@ -990,7 +1040,11 @@ module.exports = grammar({
       token(
         seq(
           "\\",
-          choice(CharEscapeSequence, "p", /u([0-9a-fA-F]{4}|\{[0-9a-fA-F]+\})/)
+          choice(
+            CharEscapeSequence,
+            /[pP]/,
+            /[uU]([0-9a-fA-F]{4}|\{[0-9a-fA-F]+\})/
+          )
         )
       ),
 
@@ -1034,9 +1088,10 @@ function keyword_regex(ident) {
  * Produce a rule to match nim-style style insensitive identifiers
  *
  * @param {string} ident - The string to match style-insensitively.
+ * @param {number} [p] - The token precedence.
  */
-function keyword(ident) {
-  return alias(token(prec(1, keyword_regex(ident))), ident);
+function keyword(ident, p) {
+  return alias(token(prec(p ?? 1, keyword_regex(ident))), ident);
 }
 
 /**

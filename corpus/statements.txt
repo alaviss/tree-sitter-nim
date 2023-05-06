@@ -156,6 +156,8 @@ from system import seq, echo
 
 from X import Y
 
+from X/Y import Y
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -166,6 +168,12 @@ from X import Y
       (identifier)))
   (import_from_statement
     module: (identifier)
+    (expression_list
+      (identifier)))
+  (import_from_statement
+    module: (infix_expression
+      left: (identifier)
+      right: (identifier))
     (expression_list
       (identifier))))
 

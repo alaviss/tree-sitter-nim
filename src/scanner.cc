@@ -78,7 +78,7 @@ constexpr ValidSymbols make_valid_symbols(initializer_list<TokenType> syms)
   return result;
 }
 
-enum class Flag { CanTerminate, NoImmediates, FlagLen };
+enum class Flag { AfterNewline, NoImmediates, FlagLen };
 
 struct State {
   vector<uint8_t> layout_stack;
@@ -920,32 +920,27 @@ bool lex_indent(Context& ctx)
 
   const int32_t current_layout = ctx.state().layout_stack.back();
 
-  if (ctx.valid(TokenType::LayoutStart) && current_layout < line_indent) {
+  if (ctx.state().test_flag(Flag::AfterNewline) &&
+      ctx.valid(TokenType::LayoutStart) && current_layout < line_indent) {
     ctx.state().layout_stack.push_back(line_indent);
     ctx.mark_end();
+    ctx.state().reset_flag(Flag::AfterNewline);
     return ctx.finish(TokenType::LayoutStart);
   }
 
-  if (ctx.state().test_flag(Flag::CanTerminate) &&
+  if (ctx.state().test_flag(Flag::AfterNewline) &&
       ctx.valid(TokenType::LayoutTerminator) && current_layout >= line_indent) {
     ctx.mark_end();
     if (current_layout == line_indent && lex_keyword(ctx)) {
       return true;
     }
-    ctx.state().reset_flag(Flag::CanTerminate);
+    ctx.state().reset_flag(Flag::AfterNewline);
     return ctx.finish(TokenType::LayoutTerminator);
   }
 
   if (ctx.valid(TokenType::LayoutEnd) && ctx.state().layout_stack.size() > 1) {
-    if (current_layout > line_indent) {
-      ctx.state().set_flag(Flag::CanTerminate);
-      ctx.state().layout_stack.pop_back();
-      ctx.mark_end();
-      return ctx.finish(TokenType::LayoutEnd);
-    }
-
-    if (ctx.eof()) {
-      ctx.state().set_flag(Flag::CanTerminate);
+    if (current_layout > line_indent || ctx.eof()) {
+      ctx.state().set_flag(Flag::AfterNewline);
       ctx.state().layout_stack.pop_back();
       ctx.mark_end();
       return ctx.finish(TokenType::LayoutEnd);
@@ -995,7 +990,7 @@ size_t scan_spaces(Context& ctx, bool force_update = false)
 loop_end:
   if (update_indent) {
     ctx.state().line_indent = indent;
-    ctx.state().set_flag(Flag::CanTerminate);
+    ctx.state().set_flag(Flag::AfterNewline);
   }
 
   return spaces;
@@ -1099,13 +1094,13 @@ bool tree_sitter_nim_external_scanner_scan(
   TRY_LEXN(ctx, operators::lex, false);
 
   if (!ctx.eof() && !ctx.any_valid(immediate_tokens)) {
-    if (ctx.state().test_flag(Flag::CanTerminate)) {
+    if (ctx.state().test_flag(Flag::AfterNewline)) {
 #ifdef TREE_SITTER_INTERNAL_BUILD
       if (getenv("TREE_SITTER_DEBUG")) {
-        cerr << "lex_nim: can terminate set but unused, resetting\n";
+        cerr << "lex_nim: resetting after newline flag\n";
       }
 #endif
-      ctx.state().reset_flag(Flag::CanTerminate);
+      ctx.state().reset_flag(Flag::AfterNewline);
       return ctx.finish(TokenType::Spaces);
     }
     if (ctx.state().test_flag(Flag::NoImmediates)) {
