@@ -9,6 +9,7 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <locale>
 #include <ostream>
@@ -43,6 +44,12 @@ enum class TokenType : TSSymbol {
   LayoutStart,
   LayoutEnd,
   LayoutTerminator,
+  LayoutEmpty,
+  Comma,
+  ParenClose,
+  BracketClose,
+  CurlyClose,
+  CurlyDotClose,
   Spaces,
   InvalidLayout,
   BinaryOpStart,
@@ -73,7 +80,7 @@ constexpr ValidSymbols make_valid_symbols(initializer_list<TokenType> syms)
 {
   uint64_t result{};
   for (const auto sym : syms) {
-    result |= 1UL << uint8_t(sym);
+    result |= 1ULL << uint8_t(sym);
   }
   return result;
 }
@@ -218,6 +225,14 @@ public:
   char32_t advance(bool skip = false)
   {
     counter_ += (int)!eof();
+    if (!eof() && state_->test_flag(Flag::AfterNewline)) {
+#ifdef TREE_SITTER_INTERNAL_BUILD
+      if (getenv("TREE_SITTER_DEBUG")) {
+        cerr << "lex_nim: invalidating after newline due to advance\n";
+      }
+#endif
+      state_->reset_flag(Flag::AfterNewline);
+    }
     lexer_->advance(lexer_, skip);
     return lookahead();
   }
@@ -303,35 +318,99 @@ private:
 /// The maximum value of `char`. Useful for unicode testing.
 constexpr char MaxAsciiChar = 0x7f;
 
-bool is_digit(char32_t chr) { return chr >= '0' && chr <= '9'; }
+constexpr bool is_digit(char32_t chr) { return chr >= '0' && chr <= '9'; }
 
-bool is_lower(char32_t chr) { return chr >= 'a' && chr <= 'z'; }
+constexpr bool is_lower(char32_t chr) { return chr >= 'a' && chr <= 'z'; }
 
-bool is_upper(char32_t chr) { return chr >= 'A' && chr <= 'Z'; }
+constexpr bool is_upper(char32_t chr) { return chr >= 'A' && chr <= 'Z'; }
 
-bool is_keyword(char32_t chr)
+constexpr bool is_keyword(char32_t chr)
 {
   return is_lower(chr) || is_upper(chr) || chr == '_';
 }
 
-string get_keyword(Context& ctx, int max_length)
+constexpr bool is_identifier(char32_t chr)
 {
-  string result{};
-  result.reserve(max_length);
+  return is_keyword(chr) || is_digit(chr);
+}
 
-  if (is_lower(ctx.lookahead())) {
-    while (is_keyword(ctx.lookahead()) && result.size() < max_length) {
-      if (ctx.lookahead() != '_') {
-        result.push_back((char)ctx.lookahead());
-      }
-      ctx.advance();
-    }
-    if (is_keyword(ctx.lookahead())) {
-      result.clear();
-    }
+constexpr char32_t to_upper(char32_t chr)
+{
+  constexpr char32_t lower_case_bit = 1U << 5U;
+  return is_lower(chr) ? chr & ~lower_case_bit : chr;
+}
+
+bool lex_inline_layout(Context& ctx, bool read_dot = false)
+{
+  if (ctx.state().layout_stack.empty()) {
+    return false;
   }
 
-  return result;
+  const auto line_indent = ctx.state().line_indent;
+
+  if (line_indent == InvalidIndent) {
+#ifdef TREE_SITTER_INTERNAL_BUILD
+    if (getenv("TREE_SITTER_DEBUG")) {
+      cerr << "lex_nim: invalid indentation reached\n";
+    }
+#endif
+    return false;
+  }
+
+  switch (ctx.lookahead()) {
+  case ',':
+    if (ctx.valid(TokenType::Comma)) {
+      return false;
+    }
+    break;
+  case ')':
+    if (ctx.valid(TokenType::ParenClose)) {
+      return false;
+    }
+    break;
+#if 0  // Keep off until grammar can support it
+  case ']':
+    if (ctx.valid(TokenType::BracketClose)) {
+      return false;
+    }
+    break;
+  case '}':
+    if ((!read_dot && ctx.valid(TokenType::CurlyClose)) ||
+        (read_dot && ctx.valid(TokenType::CurlyDotClose))) {
+      return false;
+    }
+    break;
+  case '.':
+    if (!read_dot) {
+      ctx.advance();
+      return lex_inline_layout(ctx, true);
+    }
+    return false;
+#endif
+  default:
+    return false;
+  }
+
+  if (ctx.valid(TokenType::LayoutTerminator)) {
+#ifdef TREE_SITTER_INTERNAL_BUILD
+    if (getenv("TREE_SITTER_DEBUG")) {
+      cerr << "lex_nim: terminate via delimiter\n";
+    }
+#endif
+    return ctx.finish(TokenType::LayoutTerminator);
+  }
+
+  if (ctx.valid(TokenType::LayoutEnd) && ctx.state().layout_stack.size() > 1) {
+#ifdef TREE_SITTER_INTERNAL_BUILD
+    if (getenv("TREE_SITTER_DEBUG")) {
+      cerr << "lex_nim: end layout via delimiter\n";
+    }
+#endif
+    ctx.state().layout_stack.pop_back();
+    return ctx.finish(TokenType::LayoutEnd);
+  }
+
+  return false;
 }
 
 namespace operators {
@@ -601,9 +680,13 @@ bool lex(Context& ctx, bool immediate)
   }
 
   bool is_sigil = ctx.lookahead() == '@';
+  bool is_dot = ctx.lookahead() == '.';
   auto result = scan_operator(ctx, immediate);
 
   if (result == TokenType::TokenTypeLen) {
+    if (is_dot) {
+      TRY_LEXN(ctx, lex_inline_layout, true);
+    }
     return false;
   }
 
@@ -860,7 +943,14 @@ constexpr auto ImmediateTokens = make_valid_symbols(
     {TokenType::ImmediateParenOpen, TokenType::ImmediateBracketOpen,
      TokenType::ImmediateCurlyOpen, TokenType::ImmediateStringStart,
      TokenType::ImmediateLongStringStart, TokenType::StringContent,
-     TokenType::LongStringContent});
+     TokenType::LongStringContent, TokenType::RawStringContent});
+
+void skip_underscore(Context& ctx)
+{
+  if (ctx.lookahead() == '_') {
+    ctx.advance();
+  }
+}
 
 bool lex_keyword(Context& ctx)
 {
@@ -872,33 +962,102 @@ bool lex_keyword(Context& ctx)
     return false;
   }
 
-  const auto keyword = get_keyword(ctx, sizeof("finally"));
-  if (keyword == "elif" && ctx.valid(TokenType::Elif)) {
-    ctx.mark_end();
-    return ctx.finish(TokenType::Elif);
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CASE_CHAR(chr) \
+chr:                   \
+  case to_upper(chr)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define NEXT_OR_FAIL(chr)      \
+  do {                         \
+    ctx.advance();             \
+    skip_underscore(ctx);      \
+    switch (ctx.lookahead()) { \
+    case CASE_CHAR(chr):       \
+      break;                   \
+    default:                   \
+      return false;            \
+    }                          \
+  } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CONTINUE_ON(cond) \
+  if (!(cond)) {          \
+    return false;         \
   }
-  if (keyword == "else" && ctx.valid(TokenType::Else)) {
-    ctx.mark_end();
-    return ctx.finish(TokenType::Else);
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define FINISH_IF_END(token)              \
+  do {                                    \
+    ctx.advance();                        \
+    if (is_identifier(ctx.lookahead())) { \
+      return false;                       \
+    }                                     \
+    ctx.mark_end();                       \
+    return ctx.finish(token);             \
+  } while (false)
+
+  if (ctx.lookahead() == 'e' &&
+      ctx.any_valid(make_valid_symbols(
+          {TokenType::Else, TokenType::Elif, TokenType::Except}))) {
+    ctx.advance();
+    skip_underscore(ctx);
+    switch (ctx.lookahead()) {
+    case CASE_CHAR('l'):
+      CONTINUE_ON(ctx.any_valid(
+          make_valid_symbols({TokenType::Else, TokenType::Elif})));
+      ctx.advance();
+      skip_underscore(ctx);
+      switch (ctx.lookahead()) {
+      case CASE_CHAR('s'):
+        CONTINUE_ON(ctx.valid(TokenType::Else));
+        NEXT_OR_FAIL('e');
+        FINISH_IF_END(TokenType::Else);
+
+      case CASE_CHAR('i'):
+        CONTINUE_ON(ctx.valid(TokenType::Elif));
+        NEXT_OR_FAIL('f');
+        FINISH_IF_END(TokenType::Elif);
+      }
+
+      return false;
+    case CASE_CHAR('x'):
+      CONTINUE_ON(ctx.valid(TokenType::Except));
+      NEXT_OR_FAIL('c');
+      NEXT_OR_FAIL('e');
+      NEXT_OR_FAIL('p');
+      NEXT_OR_FAIL('t');
+      FINISH_IF_END(TokenType::Except);
+    }
   }
-  if (keyword == "except" && ctx.valid(TokenType::Except)) {
-    ctx.mark_end();
-    return ctx.finish(TokenType::Except);
+
+  if (ctx.lookahead() == 'f' && ctx.valid(TokenType::Finally)) {
+    NEXT_OR_FAIL('i');
+    NEXT_OR_FAIL('n');
+    NEXT_OR_FAIL('a');
+    NEXT_OR_FAIL('l');
+    NEXT_OR_FAIL('l');
+    NEXT_OR_FAIL('y');
+    FINISH_IF_END(TokenType::Finally);
   }
-  if (keyword == "finally" && ctx.valid(TokenType::Finally)) {
-    ctx.mark_end();
-    return ctx.finish(TokenType::Finally);
+
+  if (ctx.lookahead() == 'o' && ctx.valid(TokenType::Of) &&
+      ctx.state().test_flag(Flag::AfterNewline)) {
+    NEXT_OR_FAIL('f');
+    FINISH_IF_END(TokenType::Of);
   }
-  if (keyword == "of" && ctx.valid(TokenType::Of)) {
-    ctx.mark_end();
-    return ctx.finish(TokenType::Of);
-  }
-  if (keyword == "do" && ctx.valid(TokenType::Do)) {
-    ctx.mark_end();
-    return ctx.finish(TokenType::Do);
+
+  if (ctx.lookahead() == 'd' && ctx.valid(TokenType::Do)) {
+    NEXT_OR_FAIL('o');
+    FINISH_IF_END(TokenType::Do);
   }
 
   return false;
+
+#undef CASE_CHAR
+#undef CONTINUE_ON
+#undef NEXT_OR_FAIL
+#undef FINISH_IF_END
 }
 
 bool lex_indent(Context& ctx)
@@ -928,14 +1087,23 @@ bool lex_indent(Context& ctx)
     return ctx.finish(TokenType::LayoutStart);
   }
 
-  if (ctx.state().test_flag(Flag::AfterNewline) &&
-      ctx.valid(TokenType::LayoutTerminator) && current_layout >= line_indent) {
+  if (ctx.valid(TokenType::LayoutEmpty) &&
+      ctx.state().test_flag(Flag::AfterNewline) &&
+      current_layout == line_indent) {
     ctx.mark_end();
-    if (current_layout == line_indent && lex_keyword(ctx)) {
-      return true;
+    return ctx.finish(TokenType::LayoutEmpty);
+  }
+
+  if (ctx.valid(TokenType::LayoutTerminator)) {
+    if (ctx.state().test_flag(Flag::AfterNewline) &&
+        current_layout >= line_indent) {
+      ctx.mark_end();
+      if (current_layout == line_indent && lex_keyword(ctx)) {
+        return true;
+      }
+      ctx.state().reset_flag(Flag::AfterNewline);
+      return ctx.finish(TokenType::LayoutTerminator);
     }
-    ctx.state().reset_flag(Flag::AfterNewline);
-    return ctx.finish(TokenType::LayoutTerminator);
   }
 
   if (ctx.valid(TokenType::LayoutEnd) && ctx.state().layout_stack.size() > 1) {
@@ -947,10 +1115,10 @@ bool lex_indent(Context& ctx)
     }
   }
 
-  /* if (current_layout < line_indent) { */
-  /*   ctx.mark_end(); */
-  /*   return ctx.finish(TokenType::InvalidLayout); */
-  /* } */
+  if (current_layout > line_indent && !ctx.eof()) {
+    ctx.mark_end();
+    return ctx.finish(TokenType::InvalidLayout);
+  }
 
   return false;
 }
@@ -1029,8 +1197,36 @@ bool lex_immediates(Context& ctx)
   }
   if (ctx.lookahead() == '{' && ctx.valid(TokenType::ImmediateCurlyOpen)) {
     ctx.consume();
+    if (ctx.lookahead() == '.') {
+      return false;
+    }
     return ctx.finish(TokenType::ImmediateCurlyOpen);
   }
+  return false;
+}
+
+bool lex_main(Context& ctx)
+{
+  TRY_LEX(ctx, lex_init);
+
+  TRY_LEX(ctx, lex_immediates);
+  TRY_LEX(ctx, string_lex::lex);
+  TRY_LEXN(ctx, operators::lex, true);
+
+  auto spaces = scan_spaces(ctx);
+  ctx.mark_end();
+
+  TRY_LEX(ctx, comment::lex);
+  TRY_LEX(ctx, lex_indent);
+  TRY_LEXN(ctx, operators::lex, false);
+  TRY_LEX(ctx, lex_keyword);
+  TRY_LEX(ctx, lex_inline_layout);
+
+  if (spaces > 0 && !ctx.state().test_flag(Flag::NoImmediates)) {
+    ctx.state().set_flag(Flag::NoImmediates);
+    return ctx.finish(TokenType::Spaces);
+  }
+
   return false;
 }
 
@@ -1074,26 +1270,12 @@ bool tree_sitter_nim_external_scanner_scan(
   }
 #endif
 
-  constexpr auto immediate_tokens = make_valid_symbols(
-      {TokenType::ImmediateParenOpen, TokenType::ImmediateBracketOpen,
-       TokenType::ImmediateCurlyOpen, TokenType::ImmediateStringStart,
-       TokenType::ImmediateLongStringStart, TokenType::StringContent,
-       TokenType::LongStringContent});
+  if (lex_main(ctx)) {
+    return true;
+  }
 
-  TRY_LEX(ctx, lex_init);
-
-  TRY_LEX(ctx, lex_immediates);
-  TRY_LEX(ctx, string_lex::lex);
-  TRY_LEXN(ctx, operators::lex, true);
-
-  auto spaces = scan_spaces(ctx);
-  ctx.mark_end();
-
-  TRY_LEX(ctx, comment::lex);
-  TRY_LEX(ctx, lex_indent);
-  TRY_LEXN(ctx, operators::lex, false);
-
-  if (!ctx.eof() && !ctx.any_valid(immediate_tokens)) {
+  if (!ctx.eof() && !ctx.any_valid(ImmediateTokens)) {
+    bool commit = false;
     if (ctx.state().test_flag(Flag::AfterNewline)) {
 #ifdef TREE_SITTER_INTERNAL_BUILD
       if (getenv("TREE_SITTER_DEBUG")) {
@@ -1101,7 +1283,7 @@ bool tree_sitter_nim_external_scanner_scan(
       }
 #endif
       ctx.state().reset_flag(Flag::AfterNewline);
-      return ctx.finish(TokenType::Spaces);
+      commit = true;
     }
     if (ctx.state().test_flag(Flag::NoImmediates)) {
 #ifdef TREE_SITTER_INTERNAL_BUILD
@@ -1110,14 +1292,14 @@ bool tree_sitter_nim_external_scanner_scan(
       }
 #endif
       ctx.state().reset_flag(Flag::NoImmediates);
+      commit = true;
+    }
+
+    if (commit) {
       return ctx.finish(TokenType::Spaces);
     }
   }
 
-  if (spaces > 0 && !ctx.state().test_flag(Flag::NoImmediates)) {
-    ctx.state().set_flag(Flag::NoImmediates);
-    return ctx.finish(TokenType::Spaces);
-  }
   return false;
 }
 }

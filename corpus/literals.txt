@@ -104,37 +104,6 @@ Float literals
   (float_literal))
 
 ================================================================================
-Boolean literals
-================================================================================
-
-oN
-o_n
-o_N
-off
-oF_f
-o_f_f
-true
-tRUE
-t_r_U_E
-false
-f_Al_se
-
---------------------------------------------------------------------------------
-
-(source_file
-  (boolean_literal)
-  (boolean_literal)
-  (boolean_literal)
-  (boolean_literal)
-  (boolean_literal)
-  (boolean_literal)
-  (boolean_literal)
-  (boolean_literal)
-  (boolean_literal)
-  (boolean_literal)
-  (boolean_literal))
-
-================================================================================
 String literals
 ================================================================================
 
@@ -178,6 +147,8 @@ Can start at lower indentation
 
 """# not a comment"""
 
+r"C:\"
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -207,6 +178,7 @@ Can start at lower indentation
   (block
     body: (statement_list
       (string_literal)))
+  (string_literal)
   (string_literal)
   (string_literal))
 

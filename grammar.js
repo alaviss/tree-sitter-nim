@@ -29,9 +29,7 @@ const NumericLiteral = token(
 );
 const Identifier = /[a-zA-Z\x80-\xff](_?[a-zA-Z0-9\x80-\xff])*/;
 const CharEscapeSequence = /[rRcCnNlLfFtTvV\\"'aAbBeE]|\d+|x[0-9a-fA-F]{2}/;
-const RawStringLiteral = token.immediate(
-  seq(optional(/[^\n\r"](""|[^\n\r"])*/), '"')
-);
+
 const Templates = {
   /**
    * @template T
@@ -59,21 +57,30 @@ const Templates = {
    * @param {GrammarSymbols<T>} $
    * @param {RuleOrLiteral} keyword */
   proc_type: ($, keyword) =>
-    prec("proc_type", seq(keyword, $._routine_type_tail)),
+    prec.right("proc_type", seq(keyword, Templates.proc_type_tail($))),
+
+  /**
+   * @template T
+   * @param {GrammarSymbols<T>} $ */
+  proc_type_tail: $ =>
+    seq(
+      field("parameters", optional($.parameter_declaration_list)),
+      field("return_type", optional(seq(":", $._type_expression))),
+      field("pragmas", optional($.pragma_list))
+    ),
 
   /**
    * @template T
    * @param {GrammarSymbols<T>} $
    * @param {RuleOrLiteral} keyword */
-  import: ($, keyword) =>
-    prec.right(seq(keyword, $.expression_list, optional($.except_clause))),
+  import: ($, keyword) => prec.right(seq(keyword, $._import_body)),
 
   /**
    * @template T
    * @param {GrammarSymbols<T>} $
    * @param {RuleOrLiteral} keyword */
   return_like: ($, keyword) =>
-    prec.right(seq(keyword, optional($._expression_with_call_block))),
+    prec.right(seq(keyword, optional($._expression_with_post_block))),
 };
 const WordOperators = {
   9: ["div", "mod", "shl", "shr"],
@@ -98,6 +105,17 @@ module.exports = grammar({
     $._layout_start,
     $._layout_end,
     $._layout_terminator,
+    $._layout_empty,
+    // These are tokens to track layout closes.
+    // Enabling all of these will create an unusable parser due to
+    // excessive amount of states.
+    // @ts-ignore: DSL not updated for literals
+    ",",
+    // @ts-ignore: DSL not updated for literals
+    ")",
+    $.unused_bracket, // "]",
+    $.unused_curly, // "}",
+    $.unused_curly_dot, // ".}",
     // @ts-ignore: DSL not updated for literals
     /[\n\r ]+/,
     $._invalid_layout,
@@ -117,7 +135,7 @@ module.exports = grammar({
     keyword_regex("else"),
     keyword_regex("except"),
     keyword_regex("finally"),
-    keyword_regex("of"),
+    $._case_of,
     keyword_regex("do"),
   ],
 
@@ -153,13 +171,17 @@ module.exports = grammar({
     ["post_expr", $._expression_statement],
     // [$.equal_expression, $._expression_statement],
     [$._post_expression_block, $._call_do],
-    [$.var_section, $.var_modifier],
+    [$.var_section, $.var_type],
     [$.enum_declaration, $.enum_type],
     [$.object_declaration, $.object_type],
     [$._type_definition, $.modified_type],
     [$._prefix_expression, $._simple_expression_command_start],
     [$._sigil_expression, $._command_function],
     [$._simple_expression, $._command_expression],
+    [$.modified_type, $._basic_expression],
+    [$._expression_with_call_do, $.equal_expression],
+    [$._expression, $._command_expression],
+    [$._left_hand_side, $._expression],
   ],
   // supertypes: $ => [$._statement, $._expression],
   word: $ => $.identifier,
@@ -167,11 +189,7 @@ module.exports = grammar({
   rules: {
     source_file: $ => optional($._semi_statement_list),
     statement_list: $ =>
-      choice(
-        $._block_statement_list,
-        $._line_statement_list,
-        $._layout_terminator
-      ),
+      choice($._block_statement_list, $._line_statement_list, $._layout_empty),
 
     _line_statement_list: $ => prec.right(sep1($._simple_statement, ";")),
     _block_statement_list: $ =>
@@ -205,7 +223,7 @@ module.exports = grammar({
     _expression_statement: $ =>
       choice(
         $._expression,
-        alias($.equal_expression, $.assignment),
+        $.assignment,
         alias($._command_statement, $.call),
         alias($._call_extended, $.call),
         alias($._infix_extended, $.infix_expression),
@@ -214,7 +232,10 @@ module.exports = grammar({
 
     import_statement: $ => Templates.import($, keyword("import")),
     export_statement: $ => Templates.import($, keyword("export")),
+    _import_body: $ => choice($.expression_list, $._import_except),
+    _import_except: $ => seq($._expression, $.except_clause),
     except_clause: $ => seq(keyword("except"), $.expression_list),
+
     include_statement: $ => seq(keyword("include"), $.expression_list),
     discard_statement: $ => Templates.return_like($, keyword("discard")),
     return_statement: $ => Templates.return_like($, keyword("return")),
@@ -283,15 +304,10 @@ module.exports = grammar({
         field("name", choice($._symbol, $.exported_symbol)),
         field("rewrite_pattern", optional($.term_rewriting_pattern)),
         field("generic_parameters", optional($.generic_parameter_list)),
-        field(
-          "parameters",
-          optional(seq("(", optional($.parameter_declaration_list), ")"))
-        ),
-        field("return_type", optional(seq(":", $._type_expression))),
-        field("pragmas", optional($.pragma_list)),
+        Templates.proc_type_tail($),
         field("body", optional(seq("=", $.statement_list)))
       ),
-    generic_parameter_list: $ => seq("[", $.parameter_declaration_list, "]"),
+    generic_parameter_list: $ => seq("[", $._parameter_declaration_list, "]"),
     term_rewriting_pattern: $ => seq("{", $._statement, "}"),
 
     const_section: $ => seq(keyword("const"), $._variable_declaration_section),
@@ -316,7 +332,9 @@ module.exports = grammar({
         $.object_declaration,
         $.concept_declaration,
         alias($._tuple_declaration, $.tuple_type),
-        alias($._modified_declaration, $.modified_type)
+        alias($._modified_declaration, $.modified_type),
+        alias($._command_statement, $.call),
+        alias($._call_extended, $.call)
       ),
 
     _modified_declaration: $ =>
@@ -329,6 +347,8 @@ module.exports = grammar({
     enum_field_declaration: $ =>
       seq(
         $.symbol_declaration,
+        // This should be _expression proper, but doing so inflates
+        // the parser states to unusable.
         optional(seq("=", field("value", $._simple_expression)))
       ),
     _tuple_declaration: $ =>
@@ -369,7 +389,7 @@ module.exports = grammar({
         $.conditional_declaration,
         $.variant_declaration,
         $.nil_literal,
-        $.discard_statement
+        alias(keyword("discard"), $.discard_statement)
       ),
 
     conditional_declaration: $ =>
@@ -382,7 +402,7 @@ module.exports = grammar({
           repeat(
             field(
               "alternative",
-              seq(
+              choice(
                 alias($._elif_declaration_branch, $.elif_branch),
                 alias($._else_declaration_branch, $.else_branch)
               )
@@ -392,7 +412,7 @@ module.exports = grammar({
       ),
     _elif_declaration_branch: $ =>
       seq(
-        keyword_regex("elif"),
+        keyword_alias("elif"),
         field("condition", $._expression),
         ":",
         field(
@@ -403,36 +423,27 @@ module.exports = grammar({
           )
         )
       ),
-    variant_declaration: $ =>
+    variant_declaration: $ => seq(keyword("case"), $._variant_declaration_body),
+    _variant_declaration_body: $ =>
       prec.right(
         seq(
-          keyword("case"),
           $.variant_discriminator_declaration,
           optional(":"),
-          choice(
-            seq($._layout_terminator, $._variant_declaration_body),
-            seq($._layout_start, $._variant_declaration_body, $._layout_end)
-          )
-        )
-      ),
-    _variant_declaration_body: $ =>
-      repeat1(
-        choice(
-          alias($._of_declaration_branch, $.of_branch),
-          alias($._else_declaration_branch, $.else_branch)
+          repeat1(alias($._of_declaration_branch, $.of_branch)),
+          optional(alias($._else_declaration_branch, $.else_branch))
         )
       ),
     variant_discriminator_declaration: $ => $._identifier_declaration,
     _of_declaration_branch: $ =>
       seq(
-        keyword_regex("of"),
+        alias($._case_of, "of"),
         field("values", $.expression_list),
         ":",
         alias($._object_field_declaration_branch_list, $.field_declaration_list)
       ),
     _else_declaration_branch: $ =>
       seq(
-        keyword_regex("else"),
+        keyword_alias("else"),
         ":",
         alias($._object_field_declaration_branch_list, $.field_declaration_list)
       ),
@@ -464,8 +475,13 @@ module.exports = grammar({
     _concept_type_parameter: $ => seq(keyword("type"), $._symbol),
     _concept_var_parameter: $ => seq(keyword("var"), $._symbol),
 
-    _expression_with_call_block: $ =>
-      choice($._expression_with_call_do, alias($._call_block, $.call)),
+    _expression_with_post_block: $ =>
+      choice(
+        $._expression_with_call_do,
+        alias($._call_block, $.call),
+        alias($._infix_extended, $.infix_expression),
+        alias($._prefix_extended, $.prefix_expression)
+      ),
     _expression_with_call_do: $ =>
       choice($._expression, alias($._call_do, $.call)),
     _expression: $ =>
@@ -513,6 +529,7 @@ module.exports = grammar({
         $.proc_type,
         $.iterator_type,
         $.modified_type,
+        $._type_modifier,
         alias($._call_expression, $.call),
         alias($._sigil_expression, $.prefix_expression)
       ),
@@ -523,7 +540,7 @@ module.exports = grammar({
         keyword("for"),
         field("left", $.symbol_declaration_list),
         keyword("in"),
-        field("right", $._simple_expression),
+        field("right", $._expression),
         ":",
         field("body", $.statement_list)
       ),
@@ -541,53 +558,55 @@ module.exports = grammar({
         seq(
           ":",
           field("consequence", $.statement_list),
-          field("alternative", repeat(choice($.elif_branch, $.else_branch)))
+          field("alternative", repeat($._if_branch))
         )
       ),
-    case: $ =>
-      seq(
-        keyword("case"),
-        field("value", $._expression),
-        optional(":"),
-        choice(
-          seq($._layout_terminator, $._case_body),
-          seq($._layout_start, $._case_body, $._layout_end)
-        )
-      ),
+    _if_branch: $ => choice($.elif_branch, $.else_branch),
+
+    case: $ => seq(keyword("case"), $._case_body),
     _case_body: $ =>
-      prec.right(repeat1(choice($.of_branch, $.elif_branch, $.else_branch))),
+      prec.right(
+        seq(
+          field("value", $._expression),
+          optional(":"),
+          repeat($.of_branch),
+          repeat($.elif_branch),
+          optional($.else_branch)
+        )
+      ),
+
     try: $ =>
       seq(keyword("try"), ":", field("body", $.statement_list), $._try_tail),
-    _try_tail: $ =>
-      prec.right(repeat1(choice($.except_branch, $.finally_branch))),
+    _try_tail: $ => prec.right(repeat1($._try_branch)),
+    _try_branch: $ => choice($.except_branch, $.finally_branch),
 
     of_branch: $ =>
       seq(
-        keyword_regex("of"),
+        alias($._case_of, "of"),
         field("values", $.expression_list),
         ":",
         $.statement_list
       ),
     elif_branch: $ =>
       seq(
-        keyword_regex("elif"),
+        keyword_alias("elif"),
         field("condition", $._expression),
         ":",
         field("consequence", $.statement_list)
       ),
-    else_branch: $ => seq(keyword_regex("else"), ":", $.statement_list),
+    else_branch: $ => seq(keyword_alias("else"), ":", $.statement_list),
     except_branch: $ =>
       seq(
-        keyword_regex("except"),
+        keyword_alias("except"),
         optional(field("values", $.expression_list)),
         ":",
         $.statement_list
       ),
-    finally_branch: $ => seq(keyword_regex("finally"), ":", $.statement_list),
+    finally_branch: $ => seq(keyword_alias("finally"), ":", $.statement_list),
     do_block: $ =>
       seq(
-        keyword_regex("do"),
-        optional(seq("(", $.parameter_declaration_list, ")")),
+        keyword_alias("do"),
+        optional($.parameter_declaration_list),
         optional(seq("->", $._type_expression)),
         ":",
         field("body", $.statement_list)
@@ -654,7 +673,11 @@ module.exports = grammar({
         -1,
         seq(
           field("function", $._command_function),
-          choice($._simple_expression_command_start)
+          choice(
+            $._simple_expression_command_start
+            // Can't enable, inflate grammar too much
+            // $.proc_expression
+          )
         )
       ),
     _command_function: $ => $._basic_expression,
@@ -667,15 +690,7 @@ module.exports = grammar({
       ),
     _post_expression_block_tail: $ =>
       repeat1(
-        seq(
-          choice(
-            $.elif_branch,
-            $.else_branch,
-            $.of_branch,
-            $.except_branch,
-            $.do_block
-          )
-        )
+        seq(choice($._if_branch, $.of_branch, $._try_branch, $.do_block))
       ),
 
     /* Routine expressions */
@@ -683,7 +698,7 @@ module.exports = grammar({
     func_expression: $ => Templates.proc_expr($, keyword("func")),
     iterator_expression: $ => Templates.proc_expr($, keyword("iterator")),
     _routine_expression_tail: $ =>
-      seq($._routine_type_tail, "=", field("body", $.statement_list)),
+      seq(Templates.proc_type_tail($), "=", field("body", $.statement_list)),
 
     /* Type expressions */
     _type_expression: $ => prec.dynamic(-2, choice($._simple_expression)),
@@ -699,35 +714,35 @@ module.exports = grammar({
         seq(
           keyword("tuple"),
           optional(
-            seq(
-              choice("[", alias($._immediate_bracket_open, "[")),
-              $.field_declaration_list,
-              "]"
-            )
+            alias($._tuple_field_declaration_list, $.field_declaration_list)
           )
         )
       ),
+    _tuple_field_declaration_list: $ =>
+      seq(
+        choice("[", alias($._immediate_bracket_open, "[")),
+        $._field_declaration_list,
+        "]"
+      ),
     _type_modifier: $ =>
       choice(
-        $.var_modifier,
-        $.out_modifier,
-        $.distinct_modifier,
-        $.ref_modifier,
-        $.pointer_modifier
+        $.var_type,
+        $.out_type,
+        $.distinct_type,
+        $.ref_type,
+        $.pointer_type
       ),
-    var_modifier: () => keyword("var"),
-    out_modifier: () => keyword("out"),
-    distinct_modifier: () => keyword("distinct"),
-    ref_modifier: () => keyword("ref"),
-    pointer_modifier: () => keyword("ptr"),
+    var_type: () => keyword("var"),
+    out_type: () => keyword("out"),
+    distinct_type: () => keyword("distinct"),
+    ref_type: () => keyword("ref"),
+    pointer_type: () => keyword("ptr"),
     proc_type: $ => Templates.proc_type($, keyword("proc")),
     iterator_type: $ => Templates.proc_type($, keyword("iterator")),
     _routine_type_tail: $ =>
       prec.right(
         seq(
-          "(",
           field("parameters", optional($.parameter_declaration_list)),
-          ")",
           field("return_type", optional(seq(":", $._type_expression))),
           field("pragmas", optional($.pragma_list))
         )
@@ -832,7 +847,15 @@ module.exports = grammar({
       choice(
         seq(
           "(",
-          choice($._expression, $._simple_statement_no_expression),
+          choice(
+            $._expression_with_call_do,
+            $._simple_statement_no_expression,
+            $.assignment,
+            $.const_section,
+            $.var_section,
+            $.let_section,
+            $.while
+          ),
           repeat(seq(";", $._statement)),
           ")"
         ),
@@ -841,7 +864,7 @@ module.exports = grammar({
     dot_expression: $ =>
       prec(
         "suffix",
-        seq(field("left", $._simple_expression), ".", field("right", $._symbol))
+        seq(field("left", $._basic_expression), ".", field("right", $._symbol))
       ),
     bracket_expression: $ =>
       prec(
@@ -905,28 +928,36 @@ module.exports = grammar({
       prec.right(
         seq(
           sep1(
-            choice($._expression, $.colon_expression, $.equal_expression),
+            choice(
+              $._expression_with_call_do,
+              $.colon_expression,
+              $.equal_expression
+            ),
             ","
           ),
           optional(",")
         )
       ),
     colon_expression: $ =>
-      seq(
-        field("left", $._left_hand_side),
-        ":",
-        field("right", $._expression_with_call_do)
-      ),
+      seq(field("left", $._left_hand_side), ":", field("right", $._expression)),
     equal_expression: $ =>
+      seq(field("left", $._left_hand_side), "=", field("right", $._expression)),
+    assignment: $ =>
       seq(
         field("left", $._left_hand_side),
         "=",
-        field("right", $._expression_with_call_block)
+        field("right", $._expression_with_post_block)
       ),
     _left_hand_side: $ => $._simple_expression,
 
     /* Symbol/identifier declaration */
     parameter_declaration_list: $ =>
+      seq(
+        choice("(", alias($._immediate_paren_open, "(")),
+        optional($._parameter_declaration_list),
+        ")"
+      ),
+    _parameter_declaration_list: $ =>
       seq(
         sep1(
           alias($._identifier_declaration, $.parameter_declaration),
@@ -934,7 +965,7 @@ module.exports = grammar({
         ),
         optional(choice(",", ";"))
       ),
-    field_declaration_list: $ =>
+    _field_declaration_list: $ =>
       seq(
         sep1(
           alias($._identifier_declaration, $.field_declaration),
@@ -947,36 +978,29 @@ module.exports = grammar({
         seq(
           $.symbol_declaration_list,
           field("type", optional(seq(":", $._type_expression))),
-          field("value", optional(seq("=", $._expression_with_call_block)))
+          field("value", optional(seq("=", $._expression_with_post_block)))
         )
       ),
     symbol_declaration_list: $ =>
       prec.right(
         sep1(choice($.symbol_declaration, $.tuple_deconstruct_declaration), ",")
       ),
-    tuple_deconstruct_declaration: $ =>
-      seq("(", $.symbol_declaration_list, ")"),
-    symbol_declaration: $ =>
-      seq(
-        field("name", choice($._symbol, $.exported_symbol)),
-        optional($.pragma_list)
-      ),
-    exported_symbol: $ => seq($._symbol, "*"),
-
-    _identifier_declaration: $ =>
+    _symbol_declaration_list_comma: $ =>
       prec.right(
         seq(
-          $.symbol_declaration_list,
-          field("type", optional(seq(":", $._type_expression))),
-          field("value", optional(seq("=", $._expression_with_call_block)))
+          sep1(
+            choice($.symbol_declaration, $.tuple_deconstruct_declaration),
+            ","
+          ),
+          optional(",")
         )
       ),
-    symbol_declaration_list: $ =>
-      prec.right(
-        sep1(choice($.symbol_declaration, $.tuple_deconstruct_declaration), ",")
-      ),
     tuple_deconstruct_declaration: $ =>
-      seq("(", $.symbol_declaration_list, ")"),
+      seq(
+        "(",
+        alias($._symbol_declaration_list_comma, $.symbol_declaration_list),
+        ")"
+      ),
     symbol_declaration: $ =>
       seq(
         field("name", choice($._symbol, $.exported_symbol)),
@@ -987,7 +1011,6 @@ module.exports = grammar({
     /* Literals */
     _literal: $ =>
       choice(
-        $.boolean_literal,
         $.nil_literal,
         $.integer_literal,
         $.float_literal,
@@ -996,10 +1019,6 @@ module.exports = grammar({
         $.string_literal
       ),
 
-    /* "boolean" literals doesn't exist in the grammar, but these are
-     * useful to keep around. */
-    boolean_literal: () =>
-      choice(keyword("true"), keyword("false"), keyword("on"), keyword("off")),
     nil_literal: () => keyword("nil"),
 
     integer_literal: () =>
@@ -1082,6 +1101,15 @@ function keyword_regex(ident) {
     .join("_?");
 
   return new RegExp(regex);
+}
+
+/**
+ * keyword_regex() but with aliasing to make it pretty
+ *
+ * @param {string} ident
+ */
+function keyword_alias(ident) {
+  return alias(keyword_regex(ident), ident);
 }
 
 /**

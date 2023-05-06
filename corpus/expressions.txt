@@ -165,7 +165,7 @@ else: 4
       right: (infix_expression
         left: (integer_literal)
         right: (integer_literal)))
-    right: (boolean_literal))
+    right: (identifier))
   (infix_expression
     left: (parenthesized
       (infix_expression
@@ -345,6 +345,16 @@ bar():
   x
 do: y
 
+test(
+  var1 = foo,
+  var2 = if x:
+    doX,
+  var3
+)
+
+collect(for x in s:
+  {s: x})
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -437,7 +447,31 @@ do: y
       (identifier))
     (do_block
       body: (statement_list
-        (identifier)))))
+        (identifier))))
+  (call
+    function: (identifier)
+    (equal_expression
+      left: (identifier)
+      right: (identifier))
+    (equal_expression
+      left: (identifier)
+      right: (if
+        condition: (identifier)
+        consequence: (statement_list
+          (identifier))))
+    (identifier))
+  (call
+    function: (identifier)
+    (for
+      left: (symbol_declaration_list
+        (symbol_declaration
+          name: (identifier)))
+      right: (identifier)
+      body: (statement_list
+        (curly_construction
+          (colon_expression
+            left: (identifier)
+            right: (identifier)))))))
 
 ================================================================================
 Command calls
@@ -677,13 +711,13 @@ else: expr2
 
 (source_file
   (if
-    condition: (boolean_literal)
+    condition: (identifier)
     consequence: (statement_list
       (call
         function: (identifier)
         (identifier))))
   (if
-    condition: (boolean_literal)
+    condition: (identifier)
     consequence: (statement_list
       (call
         function: (identifier)
@@ -711,7 +745,7 @@ else: expr2
         (symbol_declaration
           name: (identifier)))
       value: (if
-        condition: (boolean_literal)
+        condition: (identifier)
         consequence: (statement_list
           (integer_literal))
         alternative: (elif_branch
@@ -729,14 +763,14 @@ else: expr2
             (symbol_declaration
               name: (identifier)))
           value: (if
-            condition: (boolean_literal)
+            condition: (identifier)
             consequence: (statement_list
               (integer_literal))
             alternative: (else_branch
               (statement_list
                 (float_literal))))))))
   (if
-    condition: (boolean_literal)
+    condition: (identifier)
     consequence: (statement_list
       (identifier))
     alternative: (else_branch
@@ -784,13 +818,13 @@ else: expr2
 
 (source_file
   (when
-    condition: (boolean_literal)
+    condition: (identifier)
     consequence: (statement_list
       (call
         function: (identifier)
         (identifier))))
   (when
-    condition: (boolean_literal)
+    condition: (identifier)
     consequence: (statement_list
       (call
         function: (identifier)
@@ -821,7 +855,7 @@ else: expr2
         (symbol_declaration
           name: (identifier)))
       value: (when
-        condition: (boolean_literal)
+        condition: (identifier)
         consequence: (statement_list
           (integer_literal))
         alternative: (elif_branch
@@ -839,14 +873,14 @@ else: expr2
             (symbol_declaration
               name: (identifier)))
           value: (when
-            condition: (boolean_literal)
+            condition: (identifier)
             consequence: (statement_list
               (integer_literal))
             alternative: (else_branch
               (statement_list
                 (float_literal))))))))
   (when
-    condition: (boolean_literal)
+    condition: (identifier)
     consequence: (statement_list
       (identifier))
     alternative: (else_branch
@@ -905,10 +939,10 @@ let x = case something(10)
       (statement_list
         (call
           function: (identifier)
-          (boolean_literal))
+          (identifier))
         (call
           function: (identifier)
-          (boolean_literal))
+          (identifier))
         (integer_literal)))
     (of_branch
       values: (expression_list
@@ -919,7 +953,7 @@ let x = case something(10)
     value: (identifier)
     (of_branch
       values: (expression_list
-        (boolean_literal))
+        (identifier))
       (statement_list
         (identifier)))
     (elif_branch
@@ -939,7 +973,7 @@ let x = case something(10)
       (integer_literal))
     (of_branch
       values: (expression_list
-        (boolean_literal))
+        (identifier))
       (statement_list
         (identifier)))
     (elif_branch
@@ -950,12 +984,12 @@ let x = case something(10)
     value: (identifier)
     (of_branch
       values: (expression_list
-        (boolean_literal))
+        (identifier))
       (statement_list
         (integer_literal)))
     (of_branch
       values: (expression_list
-        (boolean_literal))
+        (identifier))
       (statement_list
         (integer_literal))))
   (let_section
@@ -969,13 +1003,13 @@ let x = case something(10)
           (integer_literal))
         (of_branch
           values: (expression_list
-            (boolean_literal))
+            (identifier))
           (statement_list
             (identifier)))
         (elif_branch
           condition: (identifier)
           consequence: (statement_list
-            (boolean_literal)))
+            (identifier)))
         (else_branch
           (statement_list
             (identifier)))))))
@@ -1112,15 +1146,15 @@ ptr ptr char
 
 (source_file
   (modified_type
-    (ref_modifier)
+    (ref_type)
     (identifier))
   (modified_type
-    (distinct_modifier)
+    (distinct_type)
     (identifier))
   (modified_type
-    (pointer_modifier)
+    (pointer_type)
     (modified_type
-      (pointer_modifier)
+      (pointer_type)
       (identifier))))
 
 ================================================================================
@@ -1134,6 +1168,10 @@ proc (x: int) {.cdecl.} = x + 10
 iterator (s: string) =
   for c in s:
     yield c
+
+proc
+
+iterator: T
 
 --------------------------------------------------------------------------------
 
@@ -1178,7 +1216,10 @@ iterator (s: string) =
         right: (identifier)
         body: (statement_list
           (yield_statement
-            (identifier)))))))
+            (identifier))))))
+  (proc_type)
+  (iterator_type
+    return_type: (identifier)))
 
 ================================================================================
 Array construction

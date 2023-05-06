@@ -11,3 +11,4 @@ target/
 
 # C stuff
 .cache/
+src/parser.c

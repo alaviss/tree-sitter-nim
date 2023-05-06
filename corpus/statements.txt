@@ -85,10 +85,10 @@ while true:
 
 (source_file
   (while
-    condition: (boolean_literal)
+    condition: (identifier)
     body: (statement_list
       (while
-        condition: (boolean_literal)
+        condition: (identifier)
         body: (statement_list
           (identifier))))))
 
@@ -115,8 +115,7 @@ import K except F
       (identifier)
       (identifier)))
   (import_statement
-    (expression_list
-      (identifier))
+    (identifier)
     (except_clause
       (expression_list
         (identifier)))))
@@ -142,8 +141,7 @@ export bar except bar
     (expression_list
       (identifier)))
   (export_statement
-    (expression_list
-      (identifier))
+    (identifier)
     (except_clause
       (expression_list
         (identifier)))))
