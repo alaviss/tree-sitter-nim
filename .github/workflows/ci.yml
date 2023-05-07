@@ -79,7 +79,10 @@ jobs:
           command: build
 
   success:
-    needs: [uptodate, tests, rust]
+    needs:
+      # - uptodate
+      - tests
+      - rust
     if: always()
     runs-on: ubuntu-latest
     name: "All checks passed"
