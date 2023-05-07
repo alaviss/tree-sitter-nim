@@ -52,7 +52,7 @@ jobs:
           npm test
         shell: bash
       - name: Test parsing sample Nim files
-        run: npm exec tree-sitter parse -s -t -q 'samples/**/*.nim'
+        run: npm exec -- tree-sitter parse -s -t -q 'samples/**/*.nim'
         shell: bash
 
   rust:
