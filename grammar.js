@@ -1361,8 +1361,11 @@ module.exports = grammar({
     _interpreted_string_literal: $ =>
       seq(
         '"',
-        repeat(
-          choice(token.immediate(prec(2, /[^\n\r"\\]+/)), $.escape_sequence)
+        alias(
+          repeat(
+            choice(token.immediate(prec(2, /[^\n\r"\\]+/)), $.escape_sequence)
+          ),
+          $.string_content
         ),
         token.immediate('"')
       ),
@@ -1383,11 +1386,14 @@ module.exports = grammar({
 
     _raw_string_body: $ =>
       seq(
-        repeat(
-          choice(
-            token.immediate(prec(2, /[^\n\r"]/)),
-            alias($._raw_string_escape, $.escape_sequence)
-          )
+        alias(
+          repeat(
+            choice(
+              token.immediate(prec(2, /[^\n\r"]/)),
+              alias($._raw_string_escape, $.escape_sequence)
+            )
+          ),
+          $.string_content
         ),
         token.immediate('"')
       ),
@@ -1397,7 +1403,10 @@ module.exports = grammar({
 
     _long_string_body: $ =>
       seq(
-        repeat(choice(token.immediate(prec(2, /[^"]+/)), $._long_string_quote)),
+        alias(
+          repeat(choice(token.immediate(prec(2, /[^"]+/)), $._long_string_quote)),
+          $.string_content
+        ),
         token.immediate('"""')
       ),
 
@@ -1410,12 +1419,24 @@ module.exports = grammar({
     blank_identifier: () => "_",
     identifier: () => Identifier,
 
-    block_documentation_comment: $ =>
-      seq(token(prec(1, "##[")), $._block_documentation_comment_content, "]##"),
-    block_comment: $ =>
-      seq(token(prec(1, "#[")), $._block_comment_content, "]#"),
-    documentation_comment: () => /##[^\n\r]*/,
-    comment: () => /#[^\n\r]*/,
+    block_documentation_comment: $ => seq(
+        token(prec(1, "##[")),
+        alias($._block_documentation_comment_content, $.comment_content),
+        "]##"
+      ),
+    block_comment: $ => seq(
+        token(prec(1, "#[")),
+        alias($._block_comment_content, $.comment_content),
+        "]#"
+      ),
+    documentation_comment: $ => seq(
+      token(prec(1, "##")),
+      alias(/[^\n\r]*/, $.comment_content)
+    ),
+    comment: $ => seq(
+      token(prec(1, "#")),
+      alias(/[^\n\r]*/, $.comment_content)
+    ),
   },
 });
 
