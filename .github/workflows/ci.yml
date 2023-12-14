@@ -21,7 +21,7 @@ jobs:
       - run: npm run build
 
       - name: Upload built parser to artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: parser
           path: src/parser.c
