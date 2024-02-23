@@ -14,7 +14,7 @@
     "eslint": "^8.55.0",
     "nan": "^2.18.0",
     "node-gyp": "^10.0.1",
-    "tree-sitter-cli": "^0.20.8"
+    "tree-sitter-cli": "^0.21.0"
   },
   "tree-sitter": [
     {
@@ -23,7 +23,8 @@
         "nim",
         "nimble",
         "nims"
-      ]
+      ],
+      "highlights": "queries/highlights.scm"
     }
   ]
 }

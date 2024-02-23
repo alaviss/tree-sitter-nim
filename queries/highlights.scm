@@ -5,6 +5,9 @@
 [ "." ";" "," ":" ] @punctuation.delimiter
 [ "(" ")" "[" "]" "{" "}" "{." ".}" ] @punctuation.bracket
 
+; Operator by default, but could be overriden
+[ "=" ] @operator
+
 ; Special
 (blank_identifier) @variable.builtin
 
@@ -31,10 +34,10 @@
 (method_declaration name: (_) @method)
 (template_declaration name: (_) @function.macro)
 (macro_declaration name: (_) @function.macro)
+(symbol_declaration name: (_) @variable)
 (parameter_declaration
   (symbol_declaration_list
     (symbol_declaration name: (_) @parameter)))
-(symbol_declaration name: (_) @variable)
 (_
   [
     type: [
@@ -180,6 +183,4 @@
 ; Operators
 (infix_expression operator: _ @operator)
 (prefix_expression operator: _ @operator)
-[
-  "="
-] @operator
+
