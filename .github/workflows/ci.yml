@@ -40,7 +40,8 @@ jobs:
       - name: Check for differences with git
         run: |
           if ! git diff --exit-code src/parser.c; then
-            echo "::warning file=grammar.js,line=1,title=The generated parser is different from the commit's::Currently this is just a reminder for the repo owner to double check the PR"
+            echo "::error file=src/parser.c,line=1::The generated parser is different from the commit's, please run npm run build and commit the new parser"
+            exit 1
           fi
 
   tests:
