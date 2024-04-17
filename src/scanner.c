@@ -12,6 +12,7 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "tree_sitter/alloc.h"
 #include "tree_sitter/parser.h"
 
 #ifdef __GNUC__
@@ -73,7 +74,7 @@ struct indent_vec {
 
 _nonnull_(1) static void indent_vec_destroy(struct indent_vec* self)
 {
-  free(self->data);
+  ts_free(self->data);
   memset(self, 0, sizeof(*self));
 }
 
@@ -104,7 +105,7 @@ _nonnull_(1) static int indent_vec_set_capacity(
     return -1;
   }
   if (size != self->capacity) {
-    indent_value* new_data = realloc(self->data, size);
+    indent_value* new_data = ts_realloc(self->data, size);
     if (!new_data) {
       return -1;
     }
@@ -314,7 +315,7 @@ struct state {
 
 static struct state* state_new(void)
 {
-  struct state* result = calloc(1, sizeof(struct state));
+  struct state* result = ts_calloc(1, sizeof(struct state));
   if (!result) {
     return NULL;
   }
@@ -325,7 +326,7 @@ static void state_destroy(struct state* self)
 {
   if (self) {
     indent_vec_destroy(&self->layout_stack);
-    free(self);
+    ts_free(self);
   }
 }
 
