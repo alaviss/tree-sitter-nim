@@ -3,7 +3,7 @@ Upstream-Name: tree-sitter-nim
 Upstream-Contact: Leorize <leorize+oss@disroot.org>
 Source: https://github.com/alaviss/tree-sitter-nim
 
-Files: corpus/*
+Files: test/corpus/*
 Copyright: 2022-2023 Leorize <leorize+oss@disroot.org>
 License: MPL-2.0
 

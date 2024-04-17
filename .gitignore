@@ -11,3 +11,7 @@ target/
 
 # C stuff
 .cache/
+*.o
+*.so
+*.pc
+*.a

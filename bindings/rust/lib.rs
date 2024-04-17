@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2022 Max Brunsfeld
+// SPDX-FileCopyrightText: 2024 tree-sitter contributors
 //
 // SPDX-License-Identifier: MIT
 
