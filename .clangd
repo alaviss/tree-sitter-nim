@@ -17,6 +17,7 @@ CompileFlags:
     - -Wno-gnu-zero-variadic-macro-arguments
     - -fno-exceptions
     - -xc
+    - -std=c11
     - -DTREE_SITTER_INTERNAL_BUILD
 
 Diagnostics:

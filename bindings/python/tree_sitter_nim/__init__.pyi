@@ -1,0 +1,5 @@
+# SPDX-FileCopyrightText: 2024 tree-sitter contributors
+#
+# SPDX-License-Identifier: MIT
+
+def language() -> int: ...
