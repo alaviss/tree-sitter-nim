@@ -240,7 +240,7 @@ module.exports = grammar({
     $._invalid_layout,
     $._sigil_operator,
     $._prefix_operator,
-    $._symbol_export_marker,
+    $._want_export_marker,
     $._case_of,
   ],
 
@@ -1424,8 +1424,7 @@ module.exports = grammar({
         field("name", choice($._symbol, $.exported_symbol)),
         optional($.pragma_list)
       ),
-    exported_symbol: $ => seq($._symbol, alias($._symbol_export_marker, "*")),
-    _symbol_export_marker: () => "*",
+    exported_symbol: $ => seq($._symbol, optional($._want_export_marker), "*"),
 
     /* Literals */
     _literal: $ =>

@@ -85,8 +85,8 @@ _nonnull_(1) _returns_nonnull_ static indent_value* indent_vec_at(
   return &self->data[idx];
 }
 
-_nonnull_(1) static indent_value
-    indent_vec_get(const struct indent_vec* self, int32_t idx)
+_nonnull_(1) static indent_value indent_vec_get(
+    const struct indent_vec* self, int32_t idx)
 {
   return *indent_vec_at((struct indent_vec*)self, idx);
 }
@@ -227,7 +227,7 @@ enum token_type {
   INVALID_LAYOUT,
   SIGIL_OP,
   UNARY_OP,
-  SYM_EXPORT_MARKER,
+  WANT_EXPORT_MARKER,
   OF,
   TOKEN_TYPE_LEN
 };
@@ -249,7 +249,7 @@ const char* const TOKEN_TYPE_STR[TOKEN_TYPE_LEN] = {
     "INVALID_LAYOUT",
     "SIGIL_OP",
     "UNARY_OP",
-    "SYM_EXPORT_MARKER",
+    "WANT_EXPORT_MARKER",
     "OF",
 };
 #endif
@@ -264,8 +264,8 @@ struct valid_tokens {
     .bits = (bits_)         \
   }
 
-_nonnull_(1) _pure_ static struct valid_tokens
-    valid_tokens_from_array(const bool* valid_tokens)
+_nonnull_(1) _pure_ static struct valid_tokens valid_tokens_from_array(
+    const bool* valid_tokens)
 {
   struct valid_tokens result = {0};
   for (unsigned i = TOKEN_TYPE_START; i < TOKEN_TYPE_LEN; i++) {
@@ -917,8 +917,8 @@ const char* const OPERATOR_SCAN_STATE_STR[] = {
     "STAR"};
 #endif
 
-_nonnull_(1) static enum token_type
-    scan_operator(struct context* ctx, bool immediate)
+_nonnull_(1) static enum token_type scan_operator(
+    struct context* ctx, bool immediate)
 {
   if (immediate) {
     return TOKEN_TYPE_LEN;
@@ -1000,7 +1000,7 @@ loop_end:
     }
     break;
   case OS_STAR:
-    if (valid_tokens_test(ctx->valid_tokens, SYM_EXPORT_MARKER)) {
+    if (valid_tokens_test(ctx->valid_tokens, WANT_EXPORT_MARKER)) {
       return TOKEN_TYPE_LEN;
     }
     break;
