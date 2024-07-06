@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tree-sitter-nim"
 description = "Nim grammar for tree-sitter"
-version = "0.6.0"
+version = "0.6.1"
 keywords = ["incremental", "parsing", "tree-sitter", "nim"]
 classifiers = [
   "Intended Audience :: Developers",
