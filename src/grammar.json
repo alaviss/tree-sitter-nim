@@ -13124,19 +13124,22 @@
           "name": "_symbol"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_symbol_export_marker"
-          },
-          "named": false,
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_want_export_marker"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
           "value": "*"
         }
       ]
-    },
-    "_symbol_export_marker": {
-      "type": "STRING",
-      "value": "*"
     },
     "_literal": {
       "type": "CHOICE",
@@ -14498,7 +14501,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_symbol_export_marker"
+      "name": "_want_export_marker"
     },
     {
       "type": "SYMBOL",
