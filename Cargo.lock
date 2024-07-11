@@ -64,7 +64,7 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter-nim"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "cc",
  "tree-sitter",
