@@ -93,12 +93,34 @@ jobs:
         with:
           command: build
 
+  wasm:
+    needs: [generate]
+    runs-on: ubuntu-latest
+    name: Run WASM test build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download generated parser
+        uses: actions/download-artifact@v4
+        with:
+          name: parser
+          path: src/
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          cache: "npm"
+          node-version: "20"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run test build
+        run: npx tree-sitter build --wasm
+
   success:
     needs:
       - compare-parser
       - generate
       - tests
       - rust
+      - wasm
     if: always()
     runs-on: ubuntu-latest
     name: "All checks passed"

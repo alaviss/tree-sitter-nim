@@ -47,13 +47,21 @@ static bool debug_mode = false; /* NOLINT(*-global-variables) */
 static const bool debug_mode = false;
 #endif
 
-#define RUNTIME_ASSERT(cond)                                            \
-  if (!(cond)) {                                                        \
-    (void)fprintf(                                                      \
-        stderr, "lex_nim: %s():%d: Assertion `%s' failed.\n", __func__, \
-        __LINE__, #cond);                                               \
-    abort();                                                            \
-  }
+#ifndef __wasm__
+#  define RUNTIME_ASSERT(cond)                                            \
+    if (!(cond)) {                                                        \
+      (void)fprintf(                                                      \
+          stderr, "lex_nim: %s():%d: Assertion `%s' failed.\n", __func__, \
+          __LINE__, #cond);                                               \
+      abort();                                                            \
+    }
+#else
+// WASM doesn't have printing enabled
+#  define RUNTIME_ASSERT(cond) \
+    if (!(cond)) {             \
+      abort();                 \
+    }
+#endif
 
 #define MIN(left, right) ((left) > (right) ? (right) : (left))
 #define MAX(left, right) ((left) < (right) ? (right) : (left))
