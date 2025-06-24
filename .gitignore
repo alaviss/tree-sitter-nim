@@ -16,3 +16,4 @@ target/
 *.pc
 *.a
 *.wasm
+*.dll

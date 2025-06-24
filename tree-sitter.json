@@ -1,0 +1,41 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "nim",
+      "camelcase": "Nim",
+      "title": "Nim",
+      "scope": "source.nim",
+      "file-types": ["nimble", "nims", "nim"],
+      "highlights": "queries/highlights.scm",
+      "injection-regex": "^nim$",
+      "class-name": "TreeSitterNim"
+    }
+  ],
+  "metadata": {
+    "version": "0.6.2",
+    "license": "MPL-2.0",
+    "description": "Nim grammar for tree-sitter",
+    "authors": [
+      {
+        "name": "leorize",
+        "email": "leorize+oss@disroot.org",
+        "url": "https://github.com/alaviss"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/alaviss/tree-sitter-nim",
+      "funding": "https://github.com/sponsors/alaviss"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": false
+  }
+}
+

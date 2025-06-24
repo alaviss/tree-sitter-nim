@@ -174,7 +174,7 @@ _nonnull_(1) static indent_value indent_vec_back(const struct indent_vec* self)
 }
 
 _nonnull_(1, 2) static unsigned indent_vec_serialize(
-    const struct indent_vec* self, uint8_t* buffer, unsigned buffer_len)
+    const struct indent_vec* self, char* buffer, unsigned buffer_len)
 {
   size_t n_bytes = self->len * sizeof(*self->data);
   if (n_bytes > buffer_len) {
@@ -195,7 +195,7 @@ _nonnull_(1, 2) static unsigned indent_vec_serialize(
 }
 
 _nonnull_(1, 2) static void indent_vec_deserialize(
-    struct indent_vec* self, const uint8_t* buffer, unsigned buffer_len)
+    struct indent_vec* self, const char* buffer, unsigned buffer_len)
 {
   int32_t n_items = (int32_t)MIN(buffer_len / sizeof(*self->data), INT32_MAX);
   if (indent_vec_set_len(self, n_items) < 0) {
@@ -344,7 +344,7 @@ _nonnull_(1) static void state_clear(struct state* self)
 }
 
 _nonnull_(1, 2) static unsigned state_serialize(
-    const struct state* self, uint8_t* buffer, unsigned buffer_len)
+    const struct state* self, char* buffer, unsigned buffer_len)
 {
   unsigned serialize_len = 0;
   serialize_len += indent_vec_serialize(
@@ -354,7 +354,7 @@ _nonnull_(1, 2) static unsigned state_serialize(
 }
 
 _nonnull_(1) static void state_deserialize(
-    struct state* self, const uint8_t* buffer, unsigned buffer_len)
+    struct state* self, const char* buffer, unsigned buffer_len)
 {
   if (!buffer && buffer_len > 0) {
     DBG("error: no buffer but buffer length > 0");
@@ -1087,7 +1087,7 @@ void tree_sitter_nim_external_scanner_destroy(void* payload)
 }
 
 unsigned tree_sitter_nim_external_scanner_serialize(
-    void* payload, uint8_t* buffer)
+    void* payload, char* buffer)
 {
   if (!payload || !buffer) {
     DBG("error: no payload or buffer");
@@ -1098,7 +1098,7 @@ unsigned tree_sitter_nim_external_scanner_serialize(
 }
 
 void tree_sitter_nim_external_scanner_deserialize(
-    void* payload, const uint8_t* buffer, unsigned length)
+    void* payload, const char* buffer, unsigned length)
 {
   if (!payload) {
     DBG("no payload, skipping");

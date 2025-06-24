@@ -1,0 +1,22 @@
+version = 1
+SPDX-PackageName = "tree-sitter-nim"
+SPDX-PackageSupplier = "Leorize <leorize+oss@disroot.org>"
+SPDX-PackageDownloadLocation = "https://github.com/alaviss/tree-sitter-nim"
+
+[[annotations]]
+path = "test/corpus/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2022-2023 Leorize <leorize+oss@disroot.org>"
+SPDX-License-Identifier = "MPL-2.0"
+
+[[annotations]]
+path = "samples/nim/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2006-2023 Andreas Rumpf. All rights reserved."
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "samples/cps/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Andy Davidoff"
+SPDX-License-Identifier = "MIT"
