@@ -11,7 +11,8 @@
 //! ```
 //! let code = "";
 //! let mut parser = tree_sitter::Parser::new();
-//! parser.set_language(tree_sitter_nim::language()).expect("Error loading nim grammar");
+//! let language = tree_sitter_nim::language();
+//! parser.set_language(&language).expect("Error loading nim grammar");
 //! let tree = parser.parse(code, None).unwrap();
 //! ```
 //!
@@ -49,9 +50,10 @@ pub const NODE_TYPES: &'static str = include_str!("../../src/node-types.json");
 mod tests {
     #[test]
     fn test_can_load_grammar() {
+        let language = super::language();
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(super::language())
+            .set_language(&language)
             .expect("Error loading nim language");
     }
 }
