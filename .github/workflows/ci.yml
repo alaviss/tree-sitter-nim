@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
-      - uses: tree-sitter/parser-test-action@v2
+      - uses: tree-sitter/parser-test-action@v3
         with:
           abi-version: 14
           test-rust: true
