@@ -2,4 +2,4 @@
 # SPDX-License-Identifier: CC0-1.0
 
 [tools]
-tree-sitter = "0.25.6"
+"github:tree-sitter/tree-sitter" = { version = "0.25.6", asset_pattern = "tree-sitter-{os}-{arch}.gz" }
