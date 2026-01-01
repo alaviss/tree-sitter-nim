@@ -13564,17 +13564,6 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "IMMEDIATE_TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 2,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "[^\\\\\\n\\r']"
-                }
-              }
-            },
-            {
               "type": "ALIAS",
               "content": {
                 "type": "SYMBOL",
@@ -13582,6 +13571,22 @@
               },
               "named": true,
               "value": "escape_sequence"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "IMMEDIATE_TOKEN",
+                "content": {
+                  "type": "PREC",
+                  "value": 2,
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[^\\\\\\n\\r']"
+                  }
+                }
+              },
+              "named": true,
+              "value": "char_content"
             }
           ]
         },

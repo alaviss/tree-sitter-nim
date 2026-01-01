@@ -852,6 +852,7 @@
   {
     "type": "block_comment",
     "named": true,
+    "extra": true,
     "fields": {},
     "children": {
       "multiple": false,
@@ -867,6 +868,7 @@
   {
     "type": "block_documentation_comment",
     "named": true,
+    "extra": true,
     "fields": {},
     "children": {
       "multiple": false,
@@ -1948,8 +1950,12 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
+        {
+          "type": "char_content",
+          "named": true
+        },
         {
           "type": "escape_sequence",
           "named": true
@@ -2294,6 +2300,7 @@
   {
     "type": "comment",
     "named": true,
+    "extra": true,
     "fields": {},
     "children": {
       "multiple": false,
@@ -3496,6 +3503,7 @@
   {
     "type": "documentation_comment",
     "named": true,
+    "extra": true,
     "fields": {},
     "children": {
       "multiple": false,
@@ -12110,6 +12118,10 @@
   {
     "type": "cast",
     "named": false
+  },
+  {
+    "type": "char_content",
+    "named": true
   },
   {
     "type": "comment_content",
