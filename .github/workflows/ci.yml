@@ -15,12 +15,14 @@ jobs:
     name: Run test suite on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v3
       - uses: tree-sitter/parser-test-action@v2
         with:
           abi-version: 14
           test-rust: true
           test-node: true
+          # Stay on Node 22 until node-gyp works in CI again
+          node-version: lts/jod
           test-python: true
           test-go: true
           # XXX: Swift pending https://github.com/swift-actions/setup-swift/issues/694
