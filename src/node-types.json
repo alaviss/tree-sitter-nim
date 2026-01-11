@@ -1948,8 +1948,12 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
+        {
+          "type": "char_content",
+          "named": true
+        },
         {
           "type": "escape_sequence",
           "named": true
@@ -12110,6 +12114,10 @@
   {
     "type": "cast",
     "named": false
+  },
+  {
+    "type": "char_content",
+    "named": true
   },
   {
     "type": "comment_content",

@@ -18,9 +18,10 @@ r"string
     (string_content)
     (block_comment
       (comment_content)))
-  (char_literal
-    (block_comment
-      (comment_content)))
+   (char_literal
+     (char_content)
+     (block_comment
+       (comment_content)))
   (raw_string_literal
     (string_content)
     (block_comment

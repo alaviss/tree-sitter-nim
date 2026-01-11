@@ -1460,8 +1460,8 @@ module.exports = grammar({
       seq(
         "'",
         choice(
-          token.immediate(prec(2, /[^\\\n\r']/)),
-          alias($._char_escape_sequence, $.escape_sequence)
+          alias($._char_escape_sequence, $.escape_sequence),
+          alias(token.immediate(prec(2, /[^\\\n\r']/)), $.char_content)
         ),
         token.immediate("'")
       ),
