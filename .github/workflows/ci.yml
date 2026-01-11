@@ -15,7 +15,7 @@ jobs:
     name: Run test suite on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v3
       - uses: tree-sitter/parser-test-action@v2
         with:
           abi-version: 14
