@@ -21,6 +21,8 @@ jobs:
           abi-version: 14
           test-rust: true
           test-node: true
+          # Stay on Node 22 until node-gyp works in CI again
+          node-version: lts/jod
           test-python: true
           test-go: true
           # XXX: Swift pending https://github.com/swift-actions/setup-swift/issues/694
