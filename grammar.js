@@ -1006,11 +1006,7 @@ module.exports = grammar({
       ),
     _call_do_argument_list: $ =>
       prec.right(
-        seq(
-          optional($._call_argument_list),
-          $.do_block,
-          optional($._post_expression_block_tail)
-        )
+        seq(optional($._call_argument_list), $._post_expression_do_block)
       ),
     _call_expression: $ =>
       prec(
@@ -1063,11 +1059,13 @@ module.exports = grammar({
       seq(token.immediate("[:"), sep1($._expression, ","), $._bracket_close),
     _post_expression_block: $ =>
       prec.right(
-        seq(
-          choice(seq(":", $.statement_list), $.do_block),
-          optional($._post_expression_block_tail)
+        choice(
+          seq(":", $.statement_list, optional($._post_expression_block_tail)),
+          $._post_expression_do_block
         )
       ),
+    _post_expression_do_block: $ =>
+      prec.right(seq($.do_block, optional($._post_expression_block_tail))),
     _post_expression_block_tail: $ =>
       repeat1(
         seq(
